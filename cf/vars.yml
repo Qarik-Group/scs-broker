@@ -1,7 +1,0 @@
-config_server_broker_config: |
-  {
-    "service_name": "config-server",
-    "service_id": "config-server",
-    "description": "Broker to create config-servers"
-    "long_description": "Broker to create config-servers"
-  }

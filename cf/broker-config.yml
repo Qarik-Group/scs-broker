@@ -1,0 +1,8 @@
+service_name: config-server
+service_id: config-server
+description: Broker to create config-servers
+long_description: Broker to create config-servers
+cloud_foundry_config:
+  api_url: (( param "Please override cloud_foundry_config.api_url in inputs.yml" ))
+  user: (( param "Please override cloud_foundry_config.user in inputs.yml" ))
+  password: (( param "Please override cloud_foundry_config.password in inputs.yml" ))

@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	code.cloudfoundry.org/lager v2.0.0+incompatible // indirect
+	github.com/cloudfoundry-community/go-cfclient v0.0.0-20200413172050-18981bf12b4b
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
