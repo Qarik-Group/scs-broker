@@ -62,37 +62,6 @@ func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingI
 	return brokerapi.Binding{}, brokerapiresponses.ErrInstanceDoesNotExist
 }
 
-// type ServiceBroker interface {
-
-// 	// GetInstance fetches information about a service instance
-// 	//   GET /v2/service_instances/{instance_id}
-// 	GetInstance(ctx context.Context, instanceID string) (GetInstanceDetailsSpec, error)
-
-// 	// Update modifies an existing service instance
-// 	//  PATCH /v2/service_instances/{instance_id}
-// 	Update(ctx context.Context, instanceID string, details UpdateDetails, asyncAllowed bool) (UpdateServiceSpec, error)
-
-// 	// LastOperation fetches last operation state for a service instance
-// 	//   GET /v2/service_instances/{instance_id}/last_operation
-// 	LastOperation(ctx context.Context, instanceID string, details PollDetails) (LastOperation, error)
-
-// 	// Bind creates a new service binding
-// 	//   PUT /v2/service_instances/{instance_id}/service_bindings/{binding_id}
-// 	Bind(ctx context.Context, instanceID, bindingID string, details BindDetails, asyncAllowed bool) (Binding, error)
-
-// 	// Unbind deletes an existing service binding
-// 	//   DELETE /v2/service_instances/{instance_id}/service_bindings/{binding_id}
-// 	Unbind(ctx context.Context, instanceID, bindingID string, details UnbindDetails, asyncAllowed bool) (UnbindSpec, error)
-
-// 	// GetBinding fetches an existing service binding
-// 	//   GET /v2/service_instances/{instance_id}/service_bindings/{binding_id}
-// 	GetBinding(ctx context.Context, instanceID, bindingID string) (GetBindingSpec, error)
-
-// 	// LastBindingOperation fetches last operation state for a service binding
-// 	//   GET /v2/service_instances/{instance_id}/service_bindings/{binding_id}/last_operation
-// 	LastBindingOperation(ctx context.Context, instanceID, bindingID string, details PollDetails) (LastOperation, error)
-// }
-
 // LastOperation ...
 // If the broker provisions asynchronously, the Cloud Controller will poll this endpoint
 // for the status of the provisioning operation.

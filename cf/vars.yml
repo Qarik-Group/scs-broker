@@ -1,0 +1,4 @@
+config_server_broker_config: |
+  {
+    "service_name": "config-server"
+  }

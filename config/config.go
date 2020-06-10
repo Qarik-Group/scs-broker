@@ -1,5 +1,13 @@
 package config
 
+import (
+	"os"
+
+	"gopkg.in/yaml.v3"
+)
+
+const ConfigEnvVarName string = "CONFIG_SERVER_BROKER_CONFIG"
+
 type Config struct {
 	ServiceName                 string `yaml:"service_name"`
 	ServiceID                   string `yaml:"service_id"`
@@ -19,4 +27,14 @@ type Config struct {
 	SupportURL                  string `yaml:"support_url"`
 	DisplayName                 string `yaml:"display_name"`
 	IconImage                   string `yaml:"icon_image"`
+}
+
+func ParseConfig() (Config, error) {
+	configJson := os.Getenv(ConfigEnvVarName)
+	if configJson == "" {
+		panic(ConfigEnvVarName + " not set")
+	}
+	var config Config
+
+	return config, yaml.Unmarshal([]byte(configJson), &config)
 }

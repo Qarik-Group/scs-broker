@@ -3,7 +3,4 @@ applications:
   - name: config-server-broker
     path: ../
     env:
-      BROKER_CONFIG: |
-        {
-          "ashoten": "ashoten_value"
-        }
+      CONFIG_SERVER_BROKER_CONFIG: ((config_server_broker_config))

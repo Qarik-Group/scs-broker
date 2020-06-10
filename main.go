@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/starkandwayne/config-server-broker/broker"
+	"github.com/starkandwayne/config-server-broker/config"
 )
 
 func main() {
@@ -17,7 +17,16 @@ func main() {
 
 	brokerLogger.Info("Starting Config Server broker")
 
-	serviceBroker := &broker.ConfigServerBroker{}
+	brokerConf, err := config.ParseConfig()
+	if err != nil {
+		brokerLogger.Fatal("Reading config from env", err, lager.Data{
+			"broker-config-environment-variable": config.ConfigEnvVarName,
+		})
+	}
+
+	serviceBroker := &broker.ConfigServerBroker{
+		Config: brokerConf,
+	}
 
 	brokerCredentials := brokerapi.BrokerCredentials{
 		Username: "admin",
