@@ -10,6 +10,7 @@ import (
 const ConfigEnvVarName string = "CONFIG_SERVER_BROKER_CONFIG"
 
 type Config struct {
+	Auth                 Auth            `yaml:"broker_auth"`
 	ServiceName          string          `yaml:"service_name"`
 	ServiceID            string          `yaml:"service_id"`
 	BasicPlanId          string          `yaml:"basic_plan_id"`
@@ -24,6 +25,11 @@ type Config struct {
 	SupportURL           string          `yaml:"support_url"`
 	DisplayName          string          `yaml:"display_name"`
 	IconImage            string          `yaml:"icon_image"`
+}
+
+type Auth struct {
+	Username string `yaml:"user"`
+	Password string `yaml:"password"`
 }
 
 func ParseConfig() (Config, error) {

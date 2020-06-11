@@ -29,8 +29,8 @@ func main() {
 	}
 
 	brokerCredentials := brokerapi.BrokerCredentials{
-		Username: "admin",
-		Password: "admin",
+		Username: brokerConf.Auth.Username,
+		Password: brokerConf.Auth.Password,
 	}
 
 	brokerAPI := brokerapi.New(serviceBroker, brokerLogger, brokerCredentials)

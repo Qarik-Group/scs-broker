@@ -1,3 +1,6 @@
+broker_auth:
+  user: (( param "Please override broker_auth.user" ))
+  password: (( param "Please override broker_auth.password" ))
 service_name: config-server
 service_id: config-server
 basic_plan_name: basic
