@@ -15,10 +15,15 @@ type ConfigServerBroker struct {
 }
 
 func (broker *ConfigServerBroker) Services(ctx context.Context) ([]brokerapi.Service, error) {
-	planList := []brokerapi.ServicePlan{}
-	// for _, plan := range broker.plans() {
-	// 	planList = append(planList, *plan)
-	// }
+	planList := []brokerapi.ServicePlan{
+		brokerapi.ServicePlan{
+			ID:          broker.Config.BasicPlanId,
+			Name:        broker.Config.BasicPlanName,
+			Description: "This plan provides a config server deployed to cf",
+			Metadata: &brokerapi.ServicePlanMetadata{
+				DisplayName: "Basic",
+			},
+		}}
 
 	return []brokerapi.Service{
 		brokerapi.Service{

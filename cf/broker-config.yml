@@ -1,5 +1,7 @@
 service_name: config-server
 service_id: config-server
+basic_plan_name: basic
+basic_plan_id: basic
 description: Broker to create config-servers
 long_description: Broker to create config-servers
 cloud_foundry_config:

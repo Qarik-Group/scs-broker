@@ -12,7 +12,8 @@ const ConfigEnvVarName string = "CONFIG_SERVER_BROKER_CONFIG"
 type Config struct {
 	ServiceName          string          `yaml:"service_name"`
 	ServiceID            string          `yaml:"service_id"`
-	SharedVMPlanID       string          `yaml:"shared_vm_plan_id"`
+	BasicPlanId          string          `yaml:"basic_plan_id"`
+	BasicPlanName        string          `yaml:"basic_plan_name"`
 	Host                 string          `yaml:"host"`
 	ServiceInstanceLimit int             `yaml:"service_instance_limit"`
 	CfConfig             cfclient.Config `yaml:"cloud_foundry_config"`
