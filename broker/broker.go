@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cloudfoundry-community/go-cfclient"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
 	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
 	"github.com/starkandwayne/config-server-broker/config"
@@ -48,19 +49,28 @@ func (broker *ConfigServerBroker) Services(ctx context.Context) ([]brokerapi.Ser
 	}, nil
 }
 
-func (broker *ConfigServerBroker) Unbind(ctx context.Context, instanceID, bindingID string, details brokerapi.UnbindDetails, asyncAllowed bool) (brokerapi.UnbindSpec, error) {
-	return brokerapi.UnbindSpec{}, brokerapiresponses.ErrInstanceDoesNotExist
-}
-
-//Provision ...
 func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID string, serviceDetails brokerapi.ProvisionDetails, asyncAllowed bool) (spec brokerapi.ProvisionedServiceSpec, err error) {
 	spec = brokerapi.ProvisionedServiceSpec{}
-	return spec, errors.New("not Implemented")
+
+	if serviceDetails.PlanID != broker.Config.BasicPlanId {
+		return spec, errors.New("plan_id not recognized")
+	}
+
+	err = broker.createBasicInstance(instanceID)
+	if err != nil {
+		return spec, err
+	}
+
+	return spec, nil
 }
 
 func (broker *ConfigServerBroker) Deprovision(ctx context.Context, instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
 	spec := brokerapi.DeprovisionServiceSpec{}
 	return spec, brokerapiresponses.ErrInstanceDoesNotExist
+}
+
+func (broker *ConfigServerBroker) Unbind(ctx context.Context, instanceID, bindingID string, details brokerapi.UnbindDetails, asyncAllowed bool) (brokerapi.UnbindSpec, error) {
+	return brokerapi.UnbindSpec{}, brokerapiresponses.ErrInstanceDoesNotExist
 }
 
 func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails, asyncAllowed bool) (brokerapi.Binding, error) {
@@ -88,4 +98,26 @@ func (broker *ConfigServerBroker) GetInstance(ctx context.Context, instanceID st
 
 func (broker *ConfigServerBroker) LastBindingOperation(ctx context.Context, instanceID, bindingID string, details brokerapi.PollDetails) (brokerapi.LastOperation, error) {
 	return brokerapi.LastOperation{}, errors.New("not implemented")
+}
+
+func (broker *ConfigServerBroker) createBasicInstance(instanceId string) error {
+	request := cfclient.AppCreateRequest{
+		Name:        "config-server-" + instanceId,
+		DockerImage: "hyness/spring-cloud-config-server:latest",
+		SpaceGuid:   "a7cc4fc8-9161-423c-a7a4-19fab3e1b64d",
+		State:       cfclient.APP_STARTED,
+		Environment: map[string]interface{}{
+			"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": "https://github.com/spring-cloud-samples/config-repo",
+		},
+	}
+	fmt.Println("Creating app: %v", request)
+	client, err := broker.Config.GetCfClient()
+	if err != nil {
+		return errors.New("Couldn't create CF client: " + err.Error())
+	}
+	_, err = client.CreateApp(request)
+	if err != nil {
+		return errors.New("Couldn't create app: " + err.Error())
+	}
+	return nil
 }
