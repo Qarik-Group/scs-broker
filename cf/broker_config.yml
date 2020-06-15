@@ -12,3 +12,5 @@ cloud_foundry_config:
   user: (( param "Please override cloud_foundry_config.user in inputs.yml" ))
   password: (( param "Please override cloud_foundry_config.password in inputs.yml" ))
 
+instance_space_guid: (( param "Please override instance_space_guid" ))
+instance_domain: (( param "Please override instance_domain" ))

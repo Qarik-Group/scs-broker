@@ -2,6 +2,7 @@ package broker
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -53,14 +54,27 @@ func (broker *ConfigServerBroker) Services(ctx context.Context) ([]brokerapi.Ser
 	}, nil
 }
 
+type InstanceParams struct {
+	GitRepoUrl string `json:"gitRepoUrl"`
+}
+
 func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID string, serviceDetails brokerapi.ProvisionDetails, asyncAllowed bool) (spec brokerapi.ProvisionedServiceSpec, err error) {
 	spec = brokerapi.ProvisionedServiceSpec{}
+
+	var params InstanceParams
+	err = json.Unmarshal(serviceDetails.RawParameters, &params)
+	if err != nil {
+		return spec, err
+	}
+	if params.GitRepoUrl == "" {
+		return spec, errors.New("Missing parameter 'gitRepoUrl'")
+	}
 
 	if serviceDetails.PlanID != broker.Config.BasicPlanId {
 		return spec, errors.New("plan_id not recognized")
 	}
 
-	err = broker.createBasicInstance(instanceID)
+	err = broker.createBasicInstance(instanceID, params)
 	if err != nil {
 		return spec, err
 	}
@@ -70,7 +84,30 @@ func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID stri
 
 func (broker *ConfigServerBroker) Deprovision(ctx context.Context, instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
 	spec := brokerapi.DeprovisionServiceSpec{}
-	return spec, brokerapiresponses.ErrInstanceDoesNotExist
+	cfClient, err := broker.getClient()
+	if err != nil {
+		return spec, err
+	}
+	appName := makeAppName(instanceID)
+	app, _, err := cfClient.GetApplicationByNameAndSpace(appName, broker.Config.InstanceSpaceGUID)
+	if err != nil {
+		return spec, err
+	}
+	routes, _, err := cfClient.GetApplicationRoutes(app.GUID)
+	if err != nil {
+		return spec, err
+	}
+	_, _, err = cfClient.UpdateApplicationStop(app.GUID)
+	if err != nil {
+		return spec, err
+	}
+	_, _, err = cfClient.DeleteRoute(routes[0].GUID)
+	_, _, err = cfClient.DeleteApplication(app.GUID)
+	if err != nil {
+		return spec, err
+	}
+
+	return spec, nil
 }
 
 func (broker *ConfigServerBroker) Unbind(ctx context.Context, instanceID, bindingID string, details brokerapi.UnbindDetails, asyncAllowed bool) (brokerapi.UnbindSpec, error) {
@@ -104,25 +141,31 @@ func (broker *ConfigServerBroker) LastBindingOperation(ctx context.Context, inst
 	return brokerapi.LastOperation{}, errors.New("not implemented")
 }
 
-func (broker *ConfigServerBroker) createBasicInstance(instanceId string) error {
+func makeAppName(instanceId string) string {
+	return "config-server-" + instanceId
+}
+func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params InstanceParams) error {
 	cfClient, err := broker.getClient()
 	if err != nil {
 		return errors.New("Couldn't start session: " + err.Error())
 	}
-	appName := "config-server-" + instanceId
+	appName := makeAppName(instanceId)
+	spaceGUID := broker.Config.InstanceSpaceGUID
 
-	app, warnings, err := cfClient.CreateApplication(
+	app, _, err := cfClient.CreateApplication(
 		ccv3.Application{
 			Name:          appName,
 			LifecycleType: constant.AppLifecycleTypeDocker,
 			State:         constant.ApplicationStarted,
 			Relationships: ccv3.Relationships{
-				constant.RelationshipTypeSpace: ccv3.Relationship{GUID: "a7cc4fc8-9161-423c-a7a4-19fab3e1b64d"},
+				constant.RelationshipTypeSpace: ccv3.Relationship{GUID: spaceGUID},
 			},
 		},
 	)
-	fmt.Println("warnings: %v", warnings)
-	pkg, warnings, err := cfClient.CreatePackage(
+	if err != nil {
+		return err
+	}
+	pkg, _, err := cfClient.CreatePackage(
 		ccv3.Package{
 			Type: constant.PackageTypeDocker,
 			Relationships: ccv3.Relationships{
@@ -130,36 +173,48 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string) error {
 			},
 			DockerImage: "hyness/spring-cloud-config-server:latest",
 		})
-	build, warnings, err := cfClient.CreateBuild(
-		ccv3.Build{PackageGUID: pkg.GUID})
+	if err != nil {
+		return err
+	}
+	build, _, err := cfClient.CreateBuild(ccv3.Build{PackageGUID: pkg.GUID})
+	if err != nil {
+		return err
+	}
 
-	droplet, warnings, err := broker.pollBuild(build.GUID, appName)
-	_, warnings, err = cfClient.SetApplicationDroplet(app.GUID, droplet.GUID)
-	_, warnings, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString("https://github.com/spring-cloud-samples/config-repo"),
+	droplet, _, err := broker.pollBuild(build.GUID, appName)
+	if err != nil {
+		return err
+	}
+	_, _, err = cfClient.SetApplicationDroplet(app.GUID, droplet.GUID)
+	if err != nil {
+		return err
+	}
+	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
+		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
 	})
-	_, warnings, err = cfClient.UpdateApplicationRestart(app.GUID)
-	fmt.Println("warnings: %v", warnings)
+	domains, _, err := cfClient.GetDomains(
+		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},
+	)
+	if err != nil {
+		return err
+	}
+	route, _, err := cfClient.CreateRoute(ccv3.Route{
+		SpaceGUID:  spaceGUID,
+		DomainGUID: domains[0].GUID,
+		Host:       appName,
+	})
+	if err != nil {
+		return err
+	}
+	_, err = cfClient.MapRoute(route.GUID, app.GUID)
+	if err != nil {
+		return err
+	}
+	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	if err != nil {
+		return err
+	}
 
-	fmt.Println("pkg: %v", pkg)
-	fmt.Println("warnings: %v", warnings)
-
-	// request := cfclient.AppCreateRequest{
-	// 	DockerImage: "hyness/spring-cloud-config-server:latest",
-	// 	SpaceGuid:   "a7cc4fc8-9161-423c-a7a4-19fab3e1b64d",
-	// 	State:       cfclient.APP_STARTED,
-	// 	Environment: map[string]interface{}{
-	// 		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": "https://github.com/spring-cloud-samples/config-repo",
-	// 	},
-	// }
-	// client, err := broker.Config.GetCfClient()
-	// if err != nil {
-	// 	return errors.New("Couldn't create CF client: " + err.Error())
-	// }
-	// _, err = client.CreateApp(request)
-	// if err != nil {
-	// 	return errors.New("Couldn't create app: " + err.Error())
-	// }
 	return nil
 }
 
