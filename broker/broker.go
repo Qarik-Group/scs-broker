@@ -8,6 +8,7 @@ import (
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
+	"code.cloudfoundry.org/cli/types"
 	"code.cloudfoundry.org/cli/util/configv3"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
 	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
@@ -134,6 +135,9 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string) error {
 
 	droplet, warnings, err := broker.pollBuild(build.GUID, appName)
 	_, warnings, err = cfClient.SetApplicationDroplet(app.GUID, droplet.GUID)
+	_, warnings, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
+		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString("https://github.com/spring-cloud-samples/config-repo"),
+	})
 	_, warnings, err = cfClient.UpdateApplicationRestart(app.GUID)
 	fmt.Println("warnings: %v", warnings)
 
