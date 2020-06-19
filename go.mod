@@ -22,6 +22,7 @@ require (
 	github.com/charlievieth/fs v0.0.0-20170613215519-7dc373669fa1 // indirect
 	github.com/cloudfoundry-community/go-cf-clients-helper v1.0.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20200413172050-18981bf12b4b
+	github.com/cloudfoundry-community/go-uaa v0.3.1
 	github.com/cloudfoundry/bosh-cli v6.2.1+incompatible // indirect
 	github.com/cloudfoundry/bosh-utils v0.0.0-20200606100138-7f673ba6be2a // indirect
 	github.com/cppforlife/go-patch v0.2.0 // indirect

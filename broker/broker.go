@@ -11,8 +11,8 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/types"
 	"code.cloudfoundry.org/cli/util/configv3"
+	"github.com/cloudfoundry-community/go-uaa"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
-	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
 	"github.com/starkandwayne/config-server-broker/config"
 )
 
@@ -111,11 +111,47 @@ func (broker *ConfigServerBroker) Deprovision(ctx context.Context, instanceID st
 }
 
 func (broker *ConfigServerBroker) Unbind(ctx context.Context, instanceID, bindingID string, details brokerapi.UnbindDetails, asyncAllowed bool) (brokerapi.UnbindSpec, error) {
-	return brokerapi.UnbindSpec{}, brokerapiresponses.ErrInstanceDoesNotExist
+	unbind := brokerapi.UnbindSpec{}
+	api, err := broker.getUaaClient()
+	if err != nil {
+		return unbind, err
+	}
+	clientId := makeClientIdForBinding(bindingID)
+	_, err = api.DeleteClient(clientId)
+	if err != nil {
+		return unbind, err
+	}
+
+	return unbind, nil
 }
 
+func makeClientIdForBinding(bindingId string) string {
+	return "config-server-binding-" + bindingId
+}
 func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails, asyncAllowed bool) (brokerapi.Binding, error) {
-	return brokerapi.Binding{}, brokerapiresponses.ErrInstanceDoesNotExist
+	binding := brokerapi.Binding{}
+	api, err := broker.getUaaClient()
+	if err != nil {
+		return binding, err
+	}
+	clientId := makeClientIdForBinding(bindingID)
+	password := broker.genClientPassword()
+	client := uaa.Client{
+		ClientID:             clientId,
+		AuthorizedGrantTypes: []string{"client_credentials"},
+		DisplayName:          clientId,
+		ClientSecret:         password,
+	}
+	_, err = api.CreateClient(client)
+	if err != nil {
+		return binding, err
+	}
+
+	binding.Credentials = map[string]string{
+		"client_id":     clientId,
+		"client_secret": password,
+	}
+	return binding, nil
 }
 
 // LastOperation ...
@@ -138,6 +174,8 @@ func (broker *ConfigServerBroker) GetInstance(ctx context.Context, instanceID st
 }
 
 func (broker *ConfigServerBroker) LastBindingOperation(ctx context.Context, instanceID, bindingID string, details brokerapi.PollDetails) (brokerapi.LastOperation, error) {
+	//create client
+
 	return brokerapi.LastOperation{}, errors.New("not implemented")
 }
 
@@ -192,7 +230,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
 		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
 		"JWK_SET_URI":                        *types.NewFilteredString(broker.Config.UaaConfig.JwkSetUri),
-		"RESOURCE_ID":                        *types.NewFilteredString("cloud_controller"),
+		"AUTHORIZED_CLIENTS":                 *types.NewFilteredString(""),
 	})
 	domains, _, err := cfClient.GetDomains(
 		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},

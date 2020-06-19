@@ -15,7 +15,7 @@ type Config struct {
 	BasicPlanId         string    `yaml:"basic_plan_id"`
 	BasicPlanName       string    `yaml:"basic_plan_name"`
 	CfConfig            CfConfig  `yaml:"cloud_foundry_config"`
-	UaaConfig           UaaConfig `yaml:"uaa_confg"`
+	UaaConfig           UaaConfig `yaml:"uaa_config"`
 	Description         string    `yaml:"description"`
 	LongDescription     string    `yaml:"long_description"`
 	ProviderDisplayName string    `yaml:"provider_display_name"`
