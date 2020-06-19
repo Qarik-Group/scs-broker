@@ -7,10 +7,13 @@ basic_plan_name: basic
 basic_plan_id: basic
 description: Broker to create config-servers
 long_description: Broker to create config-servers
+uaa_config:
+  jwk_set_uri: https://b6994abb4da5.ngrok.io/token_keys
+  client_id: (( param "Please override uaa_config.client_id" ))
+  client_secret: (( param "Please override uaa_config.client_secret" ))
 cloud_foundry_config:
   api_url: (( param "Please override cloud_foundry_config.api_url in inputs.yml" ))
-  user: (( param "Please override cloud_foundry_config.user in inputs.yml" ))
-  password: (( param "Please override cloud_foundry_config.password in inputs.yml" ))
-
+  username: (( param "Please override uaa_config.username" ))
+  password: (( param "Please override uaa_config.password" ))
 instance_space_guid: (( param "Please override instance_space_guid" ))
 instance_domain: (( param "Please override instance_domain" ))

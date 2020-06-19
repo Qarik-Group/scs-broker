@@ -171,7 +171,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 			Relationships: ccv3.Relationships{
 				constant.RelationshipTypeApplication: ccv3.Relationship{GUID: app.GUID},
 			},
-			DockerImage: "hyness/spring-cloud-config-server:latest",
+			DockerImage: "bodymindarts/spring-cloud-config-server:latest",
 		})
 	if err != nil {
 		return err
@@ -191,6 +191,8 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	}
 	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
 		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
+		"JWK_SET_URI":                        *types.NewFilteredString(broker.Config.UaaConfig.JwkSetUri),
+		"RESOURCE_ID":                        *types.NewFilteredString("cloud_controller"),
 	})
 	domains, _, err := cfClient.GetDomains(
 		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},
@@ -256,7 +258,7 @@ func (broker *ConfigServerBroker) pollBuild(buildGUID string, appName string) (c
 				}, allWarnings, nil
 			}
 
-			interval.Reset(configv3.DefaultStagingTimeout)
+			interval.Reset(configv3.DefaultPollingInterval)
 
 		case <-timeout:
 			return ccv3.Droplet{}, allWarnings, errors.New("Staging timed out")

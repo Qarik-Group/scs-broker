@@ -8,10 +8,14 @@ import (
 func (broker *ConfigServerBroker) getClient() (*ccv3.Client, error) {
 
 	config := clients.Config{
-		Endpoint: broker.Config.CfConfig.ApiUrl,
-		User:     broker.Config.CfConfig.Username,
-		Password: broker.Config.CfConfig.Password,
+		Endpoint:          broker.Config.CfConfig.ApiUrl,
+		SkipSslValidation: broker.Config.CfConfig.SkipSslValidation,
+		User:              broker.Config.CfConfig.Username,
+		Password:          broker.Config.CfConfig.Password,
+		UaaClientID:       broker.Config.UaaConfig.ClientID,
+		UaaClientSecret:   broker.Config.UaaConfig.ClientSecret,
 	}
+
 	session, err := clients.NewSession(config)
 	if err != nil {
 		return nil, err

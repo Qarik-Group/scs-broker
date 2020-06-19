@@ -2,6 +2,8 @@
 applications:
   - name: config-server-instance
     docker:
-      image: hyness/spring-cloud-config-server:latest
+      image: bodymindarts/spring-cloud-config-server:latest
     env:
       SPRING_CLOUD_CONFIG_SERVER_GIT_URI: https://github.com/spring-cloud-samples/config-repo
+      JWK_SET_URI: https://b6994abb4da5.ngrok.io/token_keys
+      RESOURCE_ID: cloud_controller
