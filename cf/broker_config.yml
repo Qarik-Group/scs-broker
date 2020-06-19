@@ -7,8 +7,9 @@ basic_plan_name: basic
 basic_plan_id: basic
 description: Broker to create config-servers
 long_description: Broker to create config-servers
+config_server_image: starkandwayne/spring-cloud-config-server:0.1.0
 uaa_config:
-  jwk_set_uri: "https://b6994abb4da5.ngrok.io/token_keys"
+  jwk_set_uri: (( param "Please override uaa_config.jwk_set_uri" ))
   client_id: (( param "Please override uaa_config.client_id" ))
   client_secret: (( param "Please override uaa_config.client_secret" ))
 cloud_foundry_config:
