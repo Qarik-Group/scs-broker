@@ -11,8 +11,8 @@ func (broker *ConfigServerBroker) getClient() (*ccv3.Client, error) {
 	config := clients.Config{
 		Endpoint:          broker.Config.CfConfig.ApiUrl,
 		SkipSslValidation: broker.Config.CfConfig.SkipSslValidation,
-		User:              broker.Config.CfConfig.Username,
-		Password:          broker.Config.CfConfig.Password,
+		User:              broker.Config.CfConfig.CfUsername,
+		Password:          broker.Config.CfConfig.CfPassword,
 	}
 
 	session, err := clients.NewSession(config)
@@ -33,7 +33,7 @@ func (broker *ConfigServerBroker) getUaaClient() (*uaa.API, error) {
 		return nil, err
 	}
 
-	uaaClient, err := uaa.New(info.UAA(), uaa.WithClientCredentials(broker.Config.UaaConfig.ClientID, broker.Config.UaaConfig.ClientSecret, uaa.JSONWebToken), uaa.WithSkipSSLValidation(broker.Config.CfConfig.SkipSslValidation))
+	uaaClient, err := uaa.New(info.UAA(), uaa.WithClientCredentials(broker.Config.CfConfig.UaaClientID, broker.Config.CfConfig.UaaClientSecret, uaa.JSONWebToken), uaa.WithSkipSSLValidation(broker.Config.CfConfig.SkipSslValidation))
 	if err != nil {
 		return nil, err
 	}

@@ -8,7 +8,7 @@ import (
 const (
 	charset = "abcdefghijklmnopqrstuvwxyz" +
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	passwordLength = 12
+	passwordLength = 30
 )
 
 var seededRand *rand.Rand = rand.New(

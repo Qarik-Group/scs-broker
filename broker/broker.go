@@ -299,9 +299,13 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	if err != nil {
 		return err
 	}
+	info, _, _, err := cfClient.GetInfo()
+	if err != nil {
+		return err
+	}
 	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
 		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
-		"JWK_SET_URI":                        *types.NewFilteredString(broker.Config.UaaConfig.JwkSetUri),
+		"JWK_SET_URI":                        *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
 		authorizedClientsKey:                 *types.NewFilteredString(""),
 	})
 	domains, _, err := cfClient.GetDomains(
