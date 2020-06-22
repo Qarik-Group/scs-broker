@@ -111,3 +111,7 @@ $ eden --client admin --client-secret admin --url http://localhost:8080 deprovis
 deprovision: config-server/basic - guid: 602effa1-13f5-408b-b25b-15a7d6aa2500
 deprovision: done
 ```
+
+## Image
+
+The image that gets run (starkandwayne/spring-cloud-config-server:1.1.0) is defined on the [oauth](https://github.com/starkandwayne/spring-cloud-config-server/tree/oauth) branch of the S&W for of [hyness/spring-cloud-config-server](https://github.com/hyness/spring-cloud-config-server). It currently doesn't support any kind of `skip-ssl-verification` option so the `jwk_set_key` endpoint of the uaa must use ssl with a verifieable cert.
