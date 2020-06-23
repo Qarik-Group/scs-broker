@@ -266,7 +266,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 		ccv3.Application{
 			Name:          appName,
 			LifecycleType: constant.AppLifecycleTypeDocker,
-			State:         constant.ApplicationStarted,
+			State:         constant.ApplicationStopped,
 			Relationships: ccv3.Relationships{
 				constant.RelationshipTypeSpace: ccv3.Relationship{GUID: spaceGUID},
 			},
