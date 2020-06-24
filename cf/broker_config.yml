@@ -7,7 +7,7 @@ basic_plan_name: basic
 basic_plan_id: basic
 description: Broker to create config-servers
 long_description: Broker to create config-servers
-config_server_image: starkandwayne/spring-cloud-config-server:0.1.0
+config_server_image: starkandwayne/spring-cloud-config-server:0.2.0
 cloud_foundry_config:
   api_url: (( param "Please override cloud_foundry_config.api_url in inputs.yml" ))
   cf_username: (( param "Please override uaa_config.username" ))

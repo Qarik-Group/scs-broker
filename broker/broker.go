@@ -17,10 +17,6 @@ import (
 	"github.com/starkandwayne/config-server-broker/config"
 )
 
-const (
-	authorizedClientsKey = "AUTHORIZED_CLIENTS"
-)
-
 type ConfigServerBroker struct {
 	Config config.Config
 }
@@ -127,41 +123,6 @@ func (broker *ConfigServerBroker) Unbind(ctx context.Context, instanceID, bindin
 		return unbind, err
 	}
 
-	cfClient, err := broker.getClient()
-	if err != nil {
-		return unbind, err
-	}
-
-	app, _, err := cfClient.GetApplicationByNameAndSpace(makeAppName(instanceID), broker.Config.InstanceSpaceGUID)
-	if err != nil {
-		return unbind, err
-	}
-	ccEnvGroups, _, err := cfClient.GetApplicationEnvironment(app.GUID)
-	if err != nil {
-		return unbind, err
-	}
-	envVars := ccv3.EnvironmentVariables{}
-	for name, val := range ccEnvGroups.EnvironmentVariables {
-		envVars[name] = *types.NewFilteredString(fmt.Sprintf("%v", val))
-	}
-	authClients := ccEnvGroups.EnvironmentVariables[authorizedClientsKey]
-	if authClients == nil {
-		return unbind, nil
-	} else {
-		clients := fmt.Sprintf("%v", authClients)
-		clients = strings.Replace(clients, clientId, "", -1)
-		clients = strings.Replace(clients, ",,", ",", -1)
-		envVars[authorizedClientsKey] = *types.NewFilteredString(clients)
-	}
-	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, envVars)
-	if err != nil {
-		return unbind, err
-	}
-	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
-	if err != nil {
-		return unbind, err
-	}
-
 	return unbind, nil
 }
 
@@ -179,6 +140,7 @@ func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingI
 	client := uaa.Client{
 		ClientID:             clientId,
 		AuthorizedGrantTypes: []string{"client_credentials"},
+		Authorities:          []string{fmt.Sprintf("config-server.%v.read", instanceID)},
 		DisplayName:          clientId,
 		ClientSecret:         password,
 	}
@@ -191,38 +153,7 @@ func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingI
 		"client_id":     clientId,
 		"client_secret": password,
 	}
-	cfClient, err := broker.getClient()
-	if err != nil {
-		return binding, err
-	}
 
-	app, _, err := cfClient.GetApplicationByNameAndSpace(makeAppName(instanceID), broker.Config.InstanceSpaceGUID)
-	if err != nil {
-		return binding, err
-	}
-	ccEnvGroups, _, err := cfClient.GetApplicationEnvironment(app.GUID)
-	if err != nil {
-		return binding, err
-	}
-	envVars := ccv3.EnvironmentVariables{}
-	for name, val := range ccEnvGroups.EnvironmentVariables {
-		envVars[name] = *types.NewFilteredString(fmt.Sprintf("%v", val))
-	}
-	authClients := ccEnvGroups.EnvironmentVariables[authorizedClientsKey]
-	if authClients == nil {
-		envVars[authorizedClientsKey] = *types.NewFilteredString(clientId)
-	} else {
-		clients := fmt.Sprintf("%v,%v", authClients, clientId)
-		envVars[authorizedClientsKey] = *types.NewFilteredString(clients)
-	}
-	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, envVars)
-	if err != nil {
-		return binding, err
-	}
-	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
-	if err != nil {
-		return binding, err
-	}
 	return binding, nil
 }
 
@@ -306,7 +237,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
 		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
 		"JWK_SET_URI":                        *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
-		authorizedClientsKey:                 *types.NewFilteredString(""),
+		"REQUIRED_AUDIENCE":                  *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
 	})
 	domains, _, err := cfClient.GetDomains(
 		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},
