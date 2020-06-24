@@ -149,9 +149,27 @@ func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingI
 		return binding, err
 	}
 
+	cfClient, err := broker.getClient()
+	if err != nil {
+		return binding, err
+	}
+
+	info, _, _, err := cfClient.GetInfo()
+	if err != nil {
+		return binding, err
+	}
+
+	app, _, err := cfClient.GetApplicationByNameAndSpace(makeAppName(instanceID), broker.Config.InstanceSpaceGUID)
+	routes, _, err := cfClient.GetApplicationRoutes(app.GUID)
+	if err != nil {
+		return binding, err
+	}
+
 	binding.Credentials = map[string]string{
-		"client_id":     clientId,
-		"client_secret": password,
+		"uri":              fmt.Sprintf("https://%v", routes[0].URL),
+		"access_token_uri": fmt.Sprintf("%v/oauth/token", info.UAA()),
+		"client_id":        clientId,
+		"client_secret":    password,
 	}
 
 	return binding, nil
