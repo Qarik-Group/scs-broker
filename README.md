@@ -17,7 +17,7 @@ When prompted enter the password.
 
 Then fill out the file:
 ```
-$ cat <<<EOF > cf/secrets.yml
+$ cat <<EOF > cf/secrets.yml
 broker_auth:
   user: admin
   password: <broker-password>
