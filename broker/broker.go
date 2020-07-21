@@ -12,13 +12,19 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/types"
 	"code.cloudfoundry.org/cli/util/configv3"
+	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry-community/go-uaa"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
 	"github.com/starkandwayne/config-server-broker/config"
 )
 
+const (
+	ArtifactsDir string = "artifacts"
+)
+
 type ConfigServerBroker struct {
 	Config config.Config
+	Logger lager.Logger
 }
 
 func (broker *ConfigServerBroker) Services(ctx context.Context) ([]brokerapi.Service, error) {
@@ -211,10 +217,11 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	appName := makeAppName(instanceId)
 	spaceGUID := broker.Config.InstanceSpaceGUID
 
+	broker.Logger.Info("Creating Application")
 	app, _, err := cfClient.CreateApplication(
 		ccv3.Application{
 			Name:          appName,
-			LifecycleType: constant.AppLifecycleTypeDocker,
+			LifecycleType: constant.AppLifecycleTypeBuildpack,
 			State:         constant.ApplicationStopped,
 			Relationships: ccv3.Relationships{
 				constant.RelationshipTypeSpace: ccv3.Relationship{GUID: spaceGUID},
@@ -224,39 +231,55 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	if err != nil {
 		return err
 	}
-	pkg, _, err := cfClient.CreatePackage(
-		ccv3.Package{
-			Type: constant.PackageTypeDocker,
-			Relationships: ccv3.Relationships{
-				constant.RelationshipTypeApplication: ccv3.Relationship{GUID: app.GUID},
-			},
-			DockerImage: broker.Config.DockerImage,
-		})
-	if err != nil {
-		return err
-	}
-	build, _, err := cfClient.CreateBuild(ccv3.Build{PackageGUID: pkg.GUID})
-	if err != nil {
-		return err
-	}
 
-	droplet, _, err := broker.pollBuild(build.GUID, appName)
-	if err != nil {
-		return err
-	}
-	_, _, err = cfClient.SetApplicationDroplet(app.GUID, droplet.GUID)
-	if err != nil {
-		return err
-	}
 	info, _, _, err := cfClient.GetInfo()
 	if err != nil {
 		return err
 	}
 	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
 		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
+		"JBP_CONFIG_OPEN_JDK_JRE":            *types.NewFilteredString("{ jre: { version: 14.+ } }"),
 		"JWK_SET_URI":                        *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
 		"REQUIRED_AUDIENCE":                  *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
 	})
+
+	broker.Logger.Info("Creating Package")
+	pkg, _, err := cfClient.CreatePackage(
+		ccv3.Package{
+			Type: constant.PackageTypeBits,
+			Relationships: ccv3.Relationships{
+				constant.RelationshipTypeApplication: ccv3.Relationship{GUID: app.GUID},
+			},
+		})
+	if err != nil {
+		return err
+	}
+
+	broker.Logger.Info("Uploading Package")
+	_, _, err = cfClient.UploadPackage(pkg, "./"+ArtifactsDir+"/spring-cloud-config-server.jar")
+	if err != nil {
+		return err
+	}
+
+	pkg, _, err = broker.pollPackage(pkg)
+
+	broker.Logger.Info("Creating Build")
+	build, _, err := cfClient.CreateBuild(ccv3.Build{PackageGUID: pkg.GUID})
+	if err != nil {
+		return err
+	}
+
+	broker.Logger.Info("polling build")
+	droplet, _, err := broker.pollBuild(build.GUID, appName)
+	if err != nil {
+		return err
+	}
+
+	broker.Logger.Info("set application droplet")
+	_, _, err = cfClient.SetApplicationDroplet(app.GUID, droplet.GUID)
+	if err != nil {
+		return err
+	}
 	domains, _, err := cfClient.GetDomains(
 		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},
 	)
@@ -327,4 +350,36 @@ func (broker *ConfigServerBroker) pollBuild(buildGUID string, appName string) (c
 			return ccv3.Droplet{}, allWarnings, errors.New("Staging timed out")
 		}
 	}
+}
+
+func (broker *ConfigServerBroker) pollPackage(pkg ccv3.Package) (ccv3.Package, ccv3.Warnings, error) {
+	var allWarnings ccv3.Warnings
+	cfClient, err := broker.getClient()
+	if err != nil {
+		return ccv3.Package{}, nil, errors.New("Couldn't start session: " + err.Error())
+	}
+
+	for pkg.State != constant.PackageReady && pkg.State != constant.PackageFailed && pkg.State != constant.PackageExpired {
+		time.Sleep(configv3.DefaultPollingInterval)
+		ccPkg, warnings, err := cfClient.GetPackage(pkg.GUID)
+		broker.Logger.Info("polling package state", lager.Data{
+			"package_guid": pkg.GUID,
+			"state":        pkg.State,
+		})
+
+		allWarnings = append(allWarnings, warnings...)
+		if err != nil {
+			return ccv3.Package{}, allWarnings, err
+		}
+
+		pkg = ccv3.Package(ccPkg)
+	}
+
+	if pkg.State == constant.PackageFailed {
+		return ccv3.Package{}, allWarnings, errors.New("PackageFailed")
+	} else if pkg.State == constant.PackageExpired {
+		return ccv3.Package{}, allWarnings, errors.New("PackageExpired")
+	}
+
+	return pkg, allWarnings, nil
 }

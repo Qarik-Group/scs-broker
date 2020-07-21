@@ -10,6 +10,7 @@ long_description: Broker to create config-servers
 config_server_image: starkandwayne/spring-cloud-config-server:0.2.0
 cloud_foundry_config:
   api_url: (( param "Please override cloud_foundry_config.api_url in inputs.yml" ))
+  skip_ssl_validation: true
   cf_username: (( param "Please override uaa_config.username" ))
   cf_password: (( param "Please override uaa_config.password" ))
   uaa_client_id: (( param "Please override uaa_config.client_id" ))
