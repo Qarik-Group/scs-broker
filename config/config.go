@@ -9,7 +9,7 @@ import (
 const ConfigEnvVarName string = "CONFIG_SERVER_BROKER_CONFIG"
 
 type Config struct {
-	DockerImage         string   `yaml:"config_server_image"`
+	ReleaseTag          string   `yaml:"config_server_release_tag"`
 	Auth                Auth     `yaml:"broker_auth"`
 	ServiceName         string   `yaml:"service_name"`
 	ServiceID           string   `yaml:"service_id"`

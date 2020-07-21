@@ -16,19 +16,20 @@ func main() {
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
 
-	brokerLogger.Info("Downloading artifact")
-	url := "https://github.com/starkandwayne/spring-cloud-config-server/releases/download/v3.0.0/spring-cloud-config-server.jar"
-	downloadArtifact("spring-cloud-config-server.jar", url)
-
-	brokerLogger.Info("Download Complete")
-	brokerLogger.Info("Starting Config Server broker")
-
 	brokerConf, err := config.ParseConfig()
 	if err != nil {
 		brokerLogger.Fatal("Reading config from env", err, lager.Data{
 			"broker-config-environment-variable": config.ConfigEnvVarName,
 		})
 	}
+
+	brokerLogger.Info("Downloading artifact")
+	url := "https://github.com/starkandwayne/spring-cloud-config-server/releases/download/" + brokerConf.ReleaseTag + "/spring-cloud-config-server.jar"
+
+	downloadArtifact("spring-cloud-config-server.jar", url)
+
+	brokerLogger.Info("Download Complete")
+	brokerLogger.Info("Starting Config Server broker")
 
 	serviceBroker := &broker.ConfigServerBroker{
 		Config: brokerConf,
