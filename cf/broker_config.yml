@@ -7,7 +7,7 @@ basic_plan_name: basic
 basic_plan_id: basic
 description: Broker to create config-servers
 long_description: Broker to create config-servers
-config_server_release_tag: v3.0.0
+config_server_release_tag: v3.1.0
 cloud_foundry_config:
   api_url: (( param "Please override cloud_foundry_config.api_url in inputs.yml" ))
   skip_ssl_validation: true

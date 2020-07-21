@@ -1,0 +1,41 @@
+---
+meta:
+
+  name:    config-server-broker
+  target:  snw
+  url:     pipes.starkandwayne.com
+
+  initial_version: 0.0.1
+
+  git:
+    email: ci@starkandwayne.com
+    name:  CI Bot
+
+  github:
+    owner:  starkandwayne
+    repo:   config-server-broker
+    branch: testflight
+    private_key:  ((github.private-key))
+    access_token: ((github.access-token))
+
+  aws:
+    access_key:  ((cfcommunity.access))
+    secret_key:  ((cfcommunity.secret))
+
+  slack:
+    webhook:  ((slack.webhook))
+    channel:        "#config-server-broker"
+
+  testflight:
+    cf:
+      api_url: https://api.system.cf.new.dave.lab.starkandwayne.com
+      username: admin
+      org: config-server-broker
+      space: testflight
+      password: ((testflight.cf-password))
+      instance_space_guid: "3837cd45-12ed-4b06-94eb-0f9858ff1d24" # org: config-server-broker space: testflight
+      instance_domain: "system.cf.dave.lab.starkandwayne.com"
+
+    uaa:
+      client_id: config-server-broker
+      client_secret: ((testflight.uaa-client-secret))

@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/types"
@@ -70,11 +72,11 @@ func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID stri
 
 	var params InstanceParams
 	err = json.Unmarshal(serviceDetails.RawParameters, &params)
-	if err != nil {
-		return spec, err
-	}
 	if params.GitRepoUrl == "" {
 		return spec, errors.New("Missing parameter 'gitRepoUrl'")
+	}
+	if err != nil {
+		return spec, err
 	}
 
 	if serviceDetails.PlanID != broker.Config.BasicPlanId {
@@ -97,6 +99,12 @@ func (broker *ConfigServerBroker) Deprovision(ctx context.Context, instanceID st
 	}
 	appName := makeAppName(instanceID)
 	app, _, err := cfClient.GetApplicationByNameAndSpace(appName, broker.Config.InstanceSpaceGUID)
+	appNotFound := ccerror.ApplicationNotFoundError{Name: appName}
+	if err == appNotFound {
+		broker.Logger.Info("app-not-found")
+		return spec, nil
+	}
+
 	if err != nil {
 		return spec, err
 	}
@@ -240,6 +248,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
 		"JBP_CONFIG_OPEN_JDK_JRE":            *types.NewFilteredString("{ jre: { version: 14.+ } }"),
 		"JWK_SET_URI":                        *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
+		"SKIP_SSL_VALIDATION":                *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
 		"REQUIRED_AUDIENCE":                  *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
 	})
 

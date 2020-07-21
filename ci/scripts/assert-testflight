@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -eu
+
+echo "assert-testflight"
+
+cf login -a ${CF_API_URL} --skip-ssl-validation -u ${CF_USERNAME} -p ${CF_PASSWORD} -o ${CF_ORG} -s ${CF_SPACE}
+
+cf create-service-key testflight-instance testflight-key
+
+instance_creds=$(cf service-key testflight-instance testflight-key | sed -n '/^{$/,$p')
+token_uri=$(echo $instance_creds | jq -r '.access_token_uri')
+client_id=$(echo $instance_creds | jq -r '.client_id')
+client_secret=$(echo $instance_creds | jq -r '.client_secret')
+instance_uri=$(echo $instance_creds | jq -r '.uri')
+
+uaac_target=$(echo ${token_uri} | sed 's/oauth.*//')
+
+uaac target ${uaac_target} --skip-ssl-validation
+uaac token client get ${client_id} -s ${client_secret}
+TOKEN=$(uaac context ${client_id} | grep access_token | awk '{ print $2 }')
+
+echo "Could get token: ${TOKEN}"
+
+# verify that we can get config
+name_val=$(curl -k -v -H "Authorization: bearer ${TOKEN}" ${instance_uri}/foo/foo | jq -r '.name')
+SUCCESS=false
+for i in {1..5}; do 
+  if [[ "${name_val}" == "foo" ]]; then
+    SUCCESS=true && break
+  fi
+  sleep 5
+done
+if [[  "${SUCCESS}" == "false" ]]; then
+  echo "Config wasn't returned correctly"
+fi
+cf delete-service-key -f testflight-instance testflight-key
