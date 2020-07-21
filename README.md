@@ -54,10 +54,7 @@ provision:   done
 
 Then create a binding:
 ```
-$ eden --client admin --client-secret <service-broker-password> --url http://localhost:8080 provision -s config-server -p basic -P '{"gitRepoUrl": "https://github.com/spring-cloud-samples/config-repo"}'
-provision:   config-server/basic - name: config-server-basic-602effa1-13f5-408b-b25b-15a7d6aa2500
-provision:   done
-eden --client admin --client-secret admin --url http://localhost:8080 bind -i 602effa1-13f5-408b-b25b-15a7d6aa2500
+$ eden --client admin --client-secret admin --url http://localhost:8080 bind -i 602effa1-13f5-408b-b25b-15a7d6aa2500
 Success
 
 Run 'eden credentials -i config-server-basic-602effa1-13f5-408b-b25b-15a7d6aa2500 -b config-server-df0a2f93-9700-47a5-83b6-0ef14b3d76c7' to see credentials
