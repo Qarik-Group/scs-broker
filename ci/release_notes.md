@@ -1,1 +1,1 @@
-This is the basic skeleton of the Config Server pipeline
+This is the initial release of ConfigServer broker
