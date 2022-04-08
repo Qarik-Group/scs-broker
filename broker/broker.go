@@ -2,7 +2,6 @@ package broker
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -18,6 +17,7 @@ import (
 	"github.com/cloudfoundry-community/go-uaa"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
 	"github.com/starkandwayne/config-server-broker/config"
+	scsccparser "github.com/starkandwayne/spring-cloud-services-cli-config-parser"
 )
 
 const (
@@ -69,21 +69,14 @@ type InstanceParams struct {
 
 func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID string, serviceDetails brokerapi.ProvisionDetails, asyncAllowed bool) (spec brokerapi.ProvisionedServiceSpec, err error) {
 	spec = brokerapi.ProvisionedServiceSpec{}
-
-	var params InstanceParams
-	err = json.Unmarshal(serviceDetails.RawParameters, &params)
-	if params.GitRepoUrl == "" {
-		return spec, errors.New("Missing parameter 'gitRepoUrl'")
-	}
-	if err != nil {
-		return spec, err
-	}
+	envsetup := scsccparser.EnvironmentSetup{}
+	mapparams, err := envsetup.ParseEnvironmentFromRaw(serviceDetails.RawParameters)
 
 	if serviceDetails.PlanID != broker.Config.BasicPlanId {
 		return spec, errors.New("plan_id not recognized")
 	}
 
-	err = broker.createBasicInstance(instanceID, params)
+	err = broker.createBasicInstance(instanceID, mapparams)
 	if err != nil {
 		return spec, err
 	}
@@ -217,7 +210,7 @@ func (broker *ConfigServerBroker) LastBindingOperation(ctx context.Context, inst
 func makeAppName(instanceId string) string {
 	return "config-server-" + instanceId
 }
-func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params InstanceParams) error {
+func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params map[string]string) error {
 	cfClient, err := broker.getClient()
 	if err != nil {
 		return errors.New("Couldn't start session: " + err.Error())
@@ -244,13 +237,27 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	if err != nil {
 		return err
 	}
+
+	for key, value := range params {
+		_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
+			key: *types.NewFilteredString(value),
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-		"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
-		"JBP_CONFIG_OPEN_JDK_JRE":            *types.NewFilteredString("{ jre: { version: 14.+ } }"),
-		"JWK_SET_URI":                        *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
-		"SKIP_SSL_VALIDATION":                *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
-		"REQUIRED_AUDIENCE":                  *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
+		//"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
+		"JBP_CONFIG_OPEN_JDK_JRE": *types.NewFilteredString("{ jre: { version: 14.+ } }"),
+		"JWK_SET_URI":             *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
+		"SKIP_SSL_VALIDATION":     *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
+		"REQUIRED_AUDIENCE":       *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
 	})
+
+	if err != nil {
+		return err
+	}
 
 	broker.Logger.Info("Creating Package")
 	pkg, _, err := cfClient.CreatePackage(

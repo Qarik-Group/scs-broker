@@ -1,7 +1,2 @@
 #!/bin/bash
-
-mkdir tmp || true
-cat <<EOF > tmp/vars.yml
-config_server_broker_config: '$(spruce merge cf/broker_config.yml cf/secrets.yml | spruce json )'
-EOF
-cf push -f cf/manifest.yml --vars-file tmp/vars.yml
+cf push -f cf/manifest.yml --vars-file cf/broker_config.yml
