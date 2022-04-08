@@ -24,7 +24,7 @@ func main() {
 	}
 
 	brokerLogger.Info("downloading-artifact")
-	url := "https://github.com/starkandwayne/spring-cloud-config-server/releases/download/" + brokerConf.ReleaseTag + "/spring-cloud-config-server.jar"
+	url := brokerConf.ConfigServerDownloadURI
 
 	downloadArtifact("spring-cloud-config-server.jar", url)
 	brokerLogger.Info("download-Complete")
@@ -51,7 +51,7 @@ func main() {
 	brokerLogger.Fatal("http-listen", http.ListenAndServe("0.0.0.0:"+port, nil))
 }
 
-func downloadArtifact(filepath string, url string) error {
+func downloadArtifact(filename string, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func downloadArtifact(filepath string, url string) error {
 
 	os.Mkdir(broker.ArtifactsDir, 0777)
 	// Create the file
-	out, err := os.Create(broker.ArtifactsDir + "/" + filepath)
+	out, err := os.Create(broker.ArtifactsDir + "/" + filename)
 	if err != nil {
 		return err
 	}
