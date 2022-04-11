@@ -1,16 +1,15 @@
-config_server_broker_config:
   broker_auth:
     user: (( param "Please override broker_auth.user" ))
     password: (( param "Please override broker_auth.password" ))
   service_name: config-server
   service_id: config-server
-  basic_plan_name: basic
-  basic_plan_id: basic
+  basic_plan_name: default
+  basic_plan_id: default
   description: Broker to create config-servers
   long_description: Broker to create config-servers
   config_server_release_tag: Greenwwich.SR3
   cloud_foundry_config:
-    api_url: (( param "Please override cloud_foundry_config.api_url in inputs.yml" ))
+    api_url: (( param "Please override cloud_foundry_config.api_url" ))
     skip_ssl_validation: true
     cf_username: (( param "Please override uaa_config.username" ))
     cf_password: (( param "Please override uaa_config.password" ))
@@ -18,4 +17,4 @@ config_server_broker_config:
     uaa_client_secret: (( param "Please override uaa_config.client_secret" ))
   instance_space_guid: (( param "Please override instance_space_guid" ))
   instance_domain: (( param "Please override instance_domain" ))
-  config_server_download_uri: "https://github.com/TheDigitalEagle/spring-cloud-config-server/releases/download/test/spring-cloud-config-server-1.0.0-GSR3.jar"
+  config_server_download_uri: (( param "Please override config_server_download_uri" ))
