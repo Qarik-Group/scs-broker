@@ -63,10 +63,6 @@ func (broker *ConfigServerBroker) Services(ctx context.Context) ([]brokerapi.Ser
 	}, nil
 }
 
-type InstanceParams struct {
-	GitRepoUrl string `json:"gitRepoUrl"`
-}
-
 func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID string, serviceDetails brokerapi.ProvisionDetails, asyncAllowed bool) (spec brokerapi.ProvisionedServiceSpec, err error) {
 	spec = brokerapi.ProvisionedServiceSpec{}
 	envsetup := scsccparser.EnvironmentSetup{}
@@ -249,7 +245,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 
 	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
 		//"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
-		"JBP_CONFIG_OPEN_JDK_JRE": *types.NewFilteredString("{ jre: { version: 14.+ } }"),
+		"JBP_CONFIG_OPEN_JDK_JRE": *types.NewFilteredString("{ jre: { version: 8.+ } }"),
 		"JWK_SET_URI":             *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
 		"SKIP_SSL_VALIDATION":     *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
 		"REQUIRED_AUDIENCE":       *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
