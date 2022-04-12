@@ -7,7 +7,7 @@
   basic_plan_id: default
   description: Broker to create config-servers
   long_description: Broker to create config-servers
-  config_server_release_tag: Greenwwich.SR3
+  config_server_release_tag: Greenwich.SR3
   cloud_foundry_config:
     api_url: (( param "Please override cloud_foundry_config.api_url" ))
     skip_ssl_validation: true
