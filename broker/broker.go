@@ -273,7 +273,14 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 		return err
 	}
 
-	pkg, _, err = broker.pollPackage(pkg)
+	broker.Logger.Info("Polling Package")
+	pkg, warnings, err := broker.pollPackage(pkg)
+	if err != nil {
+		for warn := range warnings {
+			broker.Logger.Info(fmt.Sprintf("Warning: %d", warn))
+		}
+		return err
+	}
 
 	broker.Logger.Info("Creating Build")
 	build, _, err := cfClient.CreateBuild(ccv3.Build{PackageGUID: pkg.GUID})
