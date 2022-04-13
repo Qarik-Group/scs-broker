@@ -102,12 +102,19 @@ func (broker *ConfigServerBroker) Deprovision(ctx context.Context, instanceID st
 	if err != nil {
 		return spec, err
 	}
-	_, _, err = cfClient.UpdateApplicationStop(app.GUID)
+	_, _, err := cfClient.UpdateApplicationStop(app.GUID)
 	if err != nil {
 		return spec, err
 	}
-	_, _, err = cfClient.DeleteRoute(routes[0].GUID)
-	_, _, err = cfClient.DeleteApplication(app.GUID)
+
+	for route := range routes {
+		_, _, err := cfClient.DeleteRoute(routes[route].GUID)
+		if err != nil {
+			return spec, err
+		}
+	}
+	
+	_, _, err: = cfClient.DeleteApplication(app.GUID)
 	if err != nil {
 		return spec, err
 	}
@@ -122,7 +129,7 @@ func (broker *ConfigServerBroker) Unbind(ctx context.Context, instanceID, bindin
 		return unbind, err
 	}
 	clientId := broker.makeClientIdForBinding(bindingID)
-	_, err = api.DeleteClient(clientId)
+	_, err := api.DeleteClient(clientId)
 	if err != nil {
 		return unbind, err
 	}
@@ -236,7 +243,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	}
 
 	for key, value := range params {
-		_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
+		_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
 			key: *types.NewFilteredString(value),
 		})
 		if err != nil {
