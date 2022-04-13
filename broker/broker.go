@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -268,7 +269,17 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	}
 
 	broker.Logger.Info("Uploading Package")
-	_, _, err = cfClient.UploadPackage(pkg, "./"+ArtifactsDir+"/spring-cloud-config-server.jar")
+
+	artifact := "./" + ArtifactsDir + "/spring-cloud-config-server.jar"
+
+	fi, err := os.Stat(artifact)
+	if err != nil {
+		return err
+	}
+
+	broker.Logger.Info(fmt.Sprintf("Uploading: %s", fi.Name()))
+
+	_, _, err = cfClient.UploadPackage(pkg, artifact)
 	if err != nil {
 		return err
 	}
