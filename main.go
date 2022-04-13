@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -11,8 +12,10 @@ import (
 	"github.com/starkandwayne/config-server-broker/config"
 )
 
+var brokerLogger lager.Logger
+
 func main() {
-	brokerLogger := lager.NewLogger("config-server-broker")
+	brokerLogger = lager.NewLogger("config-server-broker")
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
 
@@ -67,6 +70,19 @@ func downloadArtifact(filename string, url string) error {
 	defer out.Close()
 
 	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	num, err := io.Copy(out, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	brokerLogger.Info(fmt.Sprintf("Wrote: %d bytes", num))
+
+	fi, err := os.Stat(broker.ArtifactsDir + "/" + filename)
+	if err != nil {
+		return err
+	}
+
+	brokerLogger.Info(fmt.Sprintf("Filename: %s Size: %d", fi.Name(), fi.Size()))
+
 	return err
 }
