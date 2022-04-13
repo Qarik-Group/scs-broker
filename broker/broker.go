@@ -405,6 +405,11 @@ func (broker *ConfigServerBroker) pollPackage(pkg ccv3.Package) (ccv3.Package, c
 		pkg = ccv3.Package(ccPkg)
 	}
 
+	broker.Logger.Info("polling package final state:", lager.Data{
+		"package_guid": pkg.GUID,
+		"state":        pkg.State,
+	})
+
 	if pkg.State == constant.PackageFailed {
 		return ccv3.Package{}, allWarnings, errors.New("PackageFailed")
 	} else if pkg.State == constant.PackageExpired {
