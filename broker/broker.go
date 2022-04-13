@@ -32,7 +32,7 @@ type ConfigServerBroker struct {
 
 func (broker *ConfigServerBroker) Services(ctx context.Context) ([]brokerapi.Service, error) {
 	planList := []brokerapi.ServicePlan{
-		brokerapi.ServicePlan{
+		{
 			ID:          broker.Config.BasicPlanId,
 			Name:        broker.Config.BasicPlanName,
 			Description: "This plan provides a config server deployed to cf",
@@ -42,7 +42,7 @@ func (broker *ConfigServerBroker) Services(ctx context.Context) ([]brokerapi.Ser
 		}}
 
 	return []brokerapi.Service{
-		brokerapi.Service{
+		{
 			ID:          broker.Config.ServiceID,
 			Name:        broker.Config.ServiceName,
 			Description: broker.Config.Description,
@@ -68,6 +68,9 @@ func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID stri
 	spec = brokerapi.ProvisionedServiceSpec{}
 	envsetup := scsccparser.EnvironmentSetup{}
 	mapparams, err := envsetup.ParseEnvironmentFromRaw(serviceDetails.RawParameters)
+	if err != nil {
+		return spec, err
+	}
 
 	if serviceDetails.PlanID != broker.Config.BasicPlanId {
 		return spec, errors.New("plan_id not recognized")
@@ -171,6 +174,10 @@ func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingI
 	}
 
 	app, _, err := cfClient.GetApplicationByNameAndSpace(makeAppName(instanceID), broker.Config.InstanceSpaceGUID)
+	if err != nil {
+		return binding, err
+	}
+
 	routes, _, err := cfClient.GetApplicationRoutes(app.GUID)
 	if err != nil {
 		return binding, err
@@ -284,30 +291,32 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 		return err
 	}
 
-	broker.Logger.Info(fmt.Sprintf("Uploading: %s", fi.Name()))
+	broker.Logger.Info(fmt.Sprintf("Uploading: %s from %s size(%d)", fi.Name(), artifact, fi.Size()))
 
-	_, _, err = cfClient.UploadPackage(pkg, artifact)
+	upkg, uwarnings, err := cfClient.UploadPackage(pkg, artifact)
+	broker.showWarnings(uwarnings, upkg)
 	if err != nil {
 		return err
 	}
 
 	broker.Logger.Info("Polling Package")
-	pkg, warnings, err := broker.pollPackage(pkg)
+	pkg, pwarnings, err := broker.pollPackage(pkg)
+	broker.showWarnings(pwarnings, pkg)
 	if err != nil {
-		for warn := range warnings {
-			broker.Logger.Info(fmt.Sprintf("Warning: %d", warn))
-		}
+
 		return err
 	}
 
 	broker.Logger.Info("Creating Build")
-	build, _, err := cfClient.CreateBuild(ccv3.Build{PackageGUID: pkg.GUID})
+	build, cwarnings, err := cfClient.CreateBuild(ccv3.Build{PackageGUID: pkg.GUID})
+	broker.showWarnings(cwarnings, build)
 	if err != nil {
 		return err
 	}
 
 	broker.Logger.Info("polling build")
-	droplet, _, err := broker.pollBuild(build.GUID, appName)
+	droplet, pbwarnings, err := broker.pollBuild(build.GUID, appName)
+	broker.showWarnings(pbwarnings, droplet)
 	if err != nil {
 		return err
 	}
@@ -351,7 +360,7 @@ func (broker *ConfigServerBroker) pollBuild(buildGUID string, appName string) (c
 
 	cfClient, err := broker.getClient()
 	if err != nil {
-		return ccv3.Droplet{}, nil, errors.New("Couldn't start session: " + err.Error())
+		return ccv3.Droplet{}, nil, errors.New("couldn't start session: " + err.Error())
 	}
 
 	for {
@@ -384,7 +393,7 @@ func (broker *ConfigServerBroker) pollBuild(buildGUID string, appName string) (c
 			interval.Reset(configv3.DefaultPollingInterval)
 
 		case <-timeout:
-			return ccv3.Droplet{}, allWarnings, errors.New("Staging timed out")
+			return ccv3.Droplet{}, allWarnings, errors.New("staging timed out")
 		}
 	}
 }
@@ -396,19 +405,23 @@ func (broker *ConfigServerBroker) pollPackage(pkg ccv3.Package) (ccv3.Package, c
 		return ccv3.Package{}, nil, errors.New("Couldn't start session: " + err.Error())
 	}
 
+	var pkgCache ccv3.Package
+
 	for pkg.State != constant.PackageReady && pkg.State != constant.PackageFailed && pkg.State != constant.PackageExpired {
-		time.Sleep(configv3.DefaultPollingInterval)
+		time.Sleep(1000000000)
 		ccPkg, warnings, err := cfClient.GetPackage(pkg.GUID)
 		broker.Logger.Info("polling package state", lager.Data{
 			"package_guid": pkg.GUID,
 			"state":        pkg.State,
 		})
 
+		broker.showWarnings(warnings, ccPkg)
+
 		allWarnings = append(allWarnings, warnings...)
 		if err != nil {
 			return ccv3.Package{}, allWarnings, err
 		}
-
+		pkgCache = pkg
 		pkg = ccv3.Package(ccPkg)
 	}
 
@@ -418,10 +431,23 @@ func (broker *ConfigServerBroker) pollPackage(pkg ccv3.Package) (ccv3.Package, c
 	})
 
 	if pkg.State == constant.PackageFailed {
-		return ccv3.Package{}, allWarnings, errors.New("PackageFailed")
+		err := errors.New("package failed")
+		broker.Logger.Error(fmt.Sprintf("Service Package Error: Package State %s", pkg.State), err, lager.Data{"Orignal Package": pkgCache, "Checked Package": pkg})
+		return ccv3.Package{}, allWarnings, err
 	} else if pkg.State == constant.PackageExpired {
-		return ccv3.Package{}, allWarnings, errors.New("PackageExpired")
+		err := errors.New("package expired")
+		broker.Logger.Error(fmt.Sprintf("Service Package Error: Package State %s", pkg.State), err, lager.Data{"Orignal Package": pkgCache, "Checked Package": pkg})
+		return ccv3.Package{}, allWarnings, err
 	}
 
 	return pkg, allWarnings, nil
+}
+
+func (broker *ConfigServerBroker) showWarnings(warnings ccv3.Warnings, subject interface{}) {
+	broker.Logger.Info(fmt.Sprintf("NOTICE: %d warning(s) were detected!", len(warnings)), lager.Data{"Subject": subject})
+
+	for warn := range warnings {
+		w := warnings[warn]
+		broker.Logger.Info(fmt.Sprintf("Warning(#%d): %s ", warn+1, w))
+	}
 }
