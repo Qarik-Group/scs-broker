@@ -25,8 +25,9 @@ func NewHttpArtifactTransport(config config.Config, logger lager.Logger) HttpArt
 }
 
 func (transport *HttpArtifactTransport) EnableHttpFileTransport() {
+	transport.Logger.Info("detected file transfer protocol")
 	t := &http.Transport{}
-	os.Mkdir(broker.ArtifactsDir, 0777)
+	os.Mkdir("./"+broker.ArtifactsDir, 0777)
 	t.RegisterProtocol("file", http.NewFileTransport(http.Dir("./"+broker.ArtifactsDir)))
 	transport.Client = &http.Client{Transport: t}
 }
@@ -34,16 +35,21 @@ func (transport *HttpArtifactTransport) EnableHttpFileTransport() {
 func (transport *HttpArtifactTransport) DownloadArtifact(filename string, url string) error {
 
 	if transport.Client == nil {
+		transport.Logger.Info("standard http protocol detected")
 		transport.Client = &http.Client{}
 	}
 
+	transport.Logger.Info(fmt.Sprintf("Downloading from URI: %s ", url))
 	resp, err := transport.Client.Get(url)
+
+	transport.Logger.Info(fmt.Sprintf("HTTP STATUS CODE: %s ", resp.Status))
+
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	os.Mkdir(broker.ArtifactsDir, 0777)
+	os.Mkdir("./"+broker.ArtifactsDir, 0777)
 	// Create the file
 	out, err := os.Create("./" + broker.ArtifactsDir + "/" + filename)
 	if err != nil {
