@@ -1,20 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/starkandwayne/config-server-broker/broker"
 	"github.com/starkandwayne/config-server-broker/config"
+	"github.com/starkandwayne/config-server-broker/httpartifacttransport"
 )
 
 var brokerLogger lager.Logger
+var httpTransport httpartifacttransport.HttpArtifactTransport
 
 func main() {
+
 	brokerLogger = lager.NewLogger("config-server-broker")
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
@@ -26,10 +28,20 @@ func main() {
 		})
 	}
 
+	brokerLogger.Info("preparing transport")
+	httpTransport = httpartifacttransport.NewHttpArtifactTransport(brokerConf, brokerLogger)
+
 	brokerLogger.Info("downloading-artifact")
 	url := brokerConf.ConfigServerDownloadURI
 
-	downloadArtifact("spring-cloud-config-server.jar", url)
+	if strings.HasPrefix(url, "file://") {
+		httpTransport.EnableHttpFileTransport()
+	}
+
+	err = httpTransport.DownloadArtifact("spring-cloud-config-server.jar", url)
+	if err != nil {
+		brokerLogger.Fatal("Error downloading config-server jar", err, lager.Data{"uri": url})
+	}
 	brokerLogger.Info("download-Complete")
 	brokerLogger.Info("starting")
 
@@ -54,6 +66,7 @@ func main() {
 	brokerLogger.Fatal("http-listen", http.ListenAndServe("0.0.0.0:"+port, nil))
 }
 
+/*
 func downloadArtifact(filename string, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -86,3 +99,4 @@ func downloadArtifact(filename string, url string) error {
 
 	return err
 }
+*/
