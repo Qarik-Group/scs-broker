@@ -37,6 +37,12 @@ func (transport *HttpArtifactTransport) DownloadArtifact(filename string, url st
 	if transport.Client == nil {
 		transport.Logger.Info("standard http protocol detected")
 		transport.Client = &http.Client{}
+	} else {
+		file, err := os.Stat("./artifacts/spring-cloud-config-server-1.0.0-GSR3.jar")
+		if err != nil {
+			return err
+		}
+		transport.Logger.Info(fmt.Sprintf("Orifinal Filename: %s Size: %d", file.Name(), file.Size()))
 	}
 
 	transport.Logger.Info(fmt.Sprintf("Downloading from URI: %s ", url))
