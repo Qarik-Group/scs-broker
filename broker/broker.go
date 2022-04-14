@@ -332,6 +332,11 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	if err != nil {
 		return err
 	}
+
+	if len(domains) == 0 {
+		return errors.New("no domains found for this instance")
+	}
+
 	route, _, err := cfClient.CreateRoute(ccv3.Route{
 		SpaceGUID:  spaceGUID,
 		DomainGUID: domains[0].GUID,
