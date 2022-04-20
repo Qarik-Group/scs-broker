@@ -140,8 +140,8 @@ func (broker *ConfigServerBroker) Unbind(ctx context.Context, instanceID, bindin
 	broker.Logger.Info(fmt.Sprintf("UnBind: DeleteClient bindingID:%s clientid %s", bindingID, clientId))
 	_, err = api.DeleteClient(clientId)
 	if err != nil {
-		broker.Logger.Info("UnBind: Error in DeleteClient")
-		return unbind, err
+		broker.Logger.Error("UnBind: Error in DeleteClient - will attempt to remove anyway", err)
+		return unbind, nil
 	}
 	broker.Logger.Info("UnBind: Return")
 	return unbind, nil
