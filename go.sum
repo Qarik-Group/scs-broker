@@ -156,10 +156,8 @@ github.com/sirupsen/logrus v1.6.0 h1:UBcNElsrwanuuMsnGSlYmtmgbb23qDR5dG+6X6Oo89I
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
 github.com/square/certstrap v1.2.0 h1:ecgyABrbFLr8jSbOC6oTBmBek0t/HqtgrMUZCPuyfdw=
 github.com/square/certstrap v1.2.0/go.mod h1:CUHqV+fxJW0Y5UQFnnbYwQ7bpKXO1AKbic9g73799yw=
-github.com/starkandwayne/spring-cloud-services-cli-config-parser v0.0.0-20220408060118-b8506396e598 h1:LmjApqLv0j6i32/b/uKzrK3P5esUb2JE5FgpD9qej+w=
-github.com/starkandwayne/spring-cloud-services-cli-config-parser v0.0.0-20220408060118-b8506396e598/go.mod h1:aYtcQDcJ8hU146DZxU4vizwrQT75Qa2FakYI1vXV3Ww=
-github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.0 h1:bPA7sB37uuXxRgivQ0/NyuEoYA6qDidK0R6Gg7Jycog=
-github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.0/go.mod h1:aYtcQDcJ8hU146DZxU4vizwrQT75Qa2FakYI1vXV3Ww=
+github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.1 h1:wm5j5nqnIm8nE6dW/8RzPXUpZS0Th95R5bs0GKFXFKg=
+github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.1/go.mod h1:aYtcQDcJ8hU146DZxU4vizwrQT75Qa2FakYI1vXV3Ww=
 github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/tedsuo/rata v1.0.0 h1:Sf9aZrYy6ElSTncjnGkyC2yuVvz5YJetBIUKJ4CmeKE=
