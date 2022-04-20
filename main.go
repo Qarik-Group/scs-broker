@@ -65,38 +65,3 @@ func main() {
 	brokerLogger.Info("listening", lager.Data{"port": port})
 	brokerLogger.Fatal("http-listen", http.ListenAndServe("0.0.0.0:"+port, nil))
 }
-
-/*
-func downloadArtifact(filename string, url string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	os.Mkdir(broker.ArtifactsDir, 0777)
-	// Create the file
-	out, err := os.Create(broker.ArtifactsDir + "/" + filename)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	num, err := io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	brokerLogger.Info(fmt.Sprintf("Wrote: %d bytes", num))
-
-	fi, err := os.Stat(broker.ArtifactsDir + "/" + filename)
-	if err != nil {
-		return err
-	}
-
-	brokerLogger.Info(fmt.Sprintf("Filename: %s Size: %d", fi.Name(), fi.Size()))
-
-	return err
-}
-*/
