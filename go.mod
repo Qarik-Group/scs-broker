@@ -21,6 +21,6 @@ require (
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
-	github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.1
+	github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.2
 	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
 )

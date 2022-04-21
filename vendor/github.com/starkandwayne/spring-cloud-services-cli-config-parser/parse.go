@@ -12,6 +12,8 @@ type EnvironmentSetup struct {
 	Config map[string]string
 }
 
+const baseConfig string = "SPRING_CLOUD_CONFIG_SERVER_"
+
 func (config *EnvironmentSetup) ParseEnvironmentFromString(configline string) (map[string]string, error) {
 
 	log.Print("Received Raw Config: " + configline)
@@ -24,7 +26,7 @@ func (config *EnvironmentSetup) ParseEnvironmentFromString(configline string) (m
 		return nil, err
 	}
 
-	str, err := buildKey("SPRING_CLOUD_CONFIG_SERVER_", result)
+	str, err := buildKey(true, baseConfig, result)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +44,7 @@ func (config *EnvironmentSetup) ParseEnvironmentFromRaw(configraw json.RawMessag
 		return nil, err
 	}
 
-	str, err := buildKey("SPRING_CLOUD_CONFIG_SERVER_", result)
+	str, err := buildKey(true, baseConfig, result)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +52,7 @@ func (config *EnvironmentSetup) ParseEnvironmentFromRaw(configraw json.RawMessag
 	return str, nil
 }
 
-func buildKey(base string, keyint map[string]interface{}) (map[string]string, error) {
+func buildKey(root bool, base string, keyint map[string]interface{}) (map[string]string, error) {
 
 	envmap := make(map[string]string)
 
@@ -60,13 +62,18 @@ func buildKey(base string, keyint map[string]interface{}) (map[string]string, er
 
 	for key, value := range keys {
 
-		sb.WriteString(base + key)
+		if root == false {
+			sb.WriteString(base + key)
+		} else {
+			sb.WriteString(baseConfig + key)
+		}
+
 		switch t := value.(type) {
 		default:
 			log.Panicf("Invalid Type! %T", t)
 		case map[string]interface{}:
 			sb.WriteString("_")
-			str, err := buildKey(sb.String(), value.(map[string]interface{}))
+			str, err := buildKey(false, sb.String(), value.(map[string]interface{}))
 			if err != nil {
 				log.Println(err)
 			}
