@@ -119,7 +119,7 @@ github.com/pivotal-cf/brokerapi/utils
 github.com/pkg/errors
 # github.com/sirupsen/logrus v1.6.0
 github.com/sirupsen/logrus
-# github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.1
+# github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.2
 ## explicit
 github.com/starkandwayne/spring-cloud-services-cli-config-parser
 # github.com/tedsuo/rata v1.0.0
