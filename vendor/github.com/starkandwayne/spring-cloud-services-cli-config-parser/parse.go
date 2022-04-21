@@ -62,9 +62,10 @@ func buildKey(root bool, base string, keyint map[string]interface{}) (map[string
 
 	for key, value := range keys {
 
-		if root == false {
+		if !root {
 			sb.WriteString(base + key)
 		} else {
+			sb.Reset()
 			sb.WriteString(baseConfig + key)
 		}
 
