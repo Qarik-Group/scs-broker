@@ -86,7 +86,7 @@ func buildKey(root bool, base string, keyint map[string]interface{}) (map[string
 			envmap[strings.ToUpper(sb.String())] = s
 			sb.Reset()
 		case float64:
-			s := fmt.Sprintf("%f", value.(float64))
+			s := fmt.Sprintf("%g", value.(float64))
 			envmap[strings.ToUpper(sb.String())] = s
 			sb.Reset()
 		case string:
