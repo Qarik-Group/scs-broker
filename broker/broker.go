@@ -37,7 +37,7 @@ func (broker *ConfigServerBroker) Services(ctx context.Context) ([]brokerapi.Ser
 			Name:        broker.Config.BasicPlanName,
 			Description: "This plan provides a config server deployed to cf",
 			Metadata: &brokerapi.ServicePlanMetadata{
-				DisplayName: "Basic",
+				DisplayName: "Default",
 			},
 		}}
 
@@ -219,15 +219,112 @@ func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingI
 	return binding, nil
 }
 
-// LastOperation ...
-// If the broker provisions asynchronously, the Cloud Controller will poll this endpoint
-// for the status of the provisioning operation.
 func (broker *ConfigServerBroker) LastOperation(ctx context.Context, instanceID string, details brokerapi.PollDetails) (brokerapi.LastOperation, error) {
 	return brokerapi.LastOperation{}, errors.New("not implemented")
 }
 
 func (broker *ConfigServerBroker) Update(cxt context.Context, instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.UpdateServiceSpec, error) {
-	return brokerapi.UpdateServiceSpec{}, errors.New("not implemented")
+
+	appName := makeAppName(instanceID)
+	spaceGUID := broker.Config.InstanceSpaceGUID
+
+	broker.Logger.Info("update-service-instance", lager.Data{"plan-id": details.PlanID, "service-id": details.ServiceID})
+
+	spec := brokerapi.UpdateServiceSpec{}
+	envsetup := scsccparser.EnvironmentSetup{}
+	cfClient, err := broker.getClient()
+
+	if err != nil {
+		return spec, errors.New("Couldn't start session: " + err.Error())
+	}
+
+	info, _, _, err := cfClient.GetInfo()
+	if err != nil {
+		return spec, err
+	}
+
+	app, _, err := cfClient.GetApplicationByNameAndSpace(appName, spaceGUID)
+	if err != nil {
+		return spec, errors.New("Couldn't find app session: " + err.Error())
+	}
+
+	mapparams, err := envsetup.ParseEnvironmentFromRaw(details.RawParameters)
+	if err != nil {
+		return spec, err
+	}
+
+	if details.PlanID != broker.Config.BasicPlanId {
+		return spec, errors.New("plan_id not recognized")
+	}
+
+	broker.Logger.Info("Updating Environment")
+	err = broker.updateAppEnvironment(cfClient, &app, &info, instanceID, mapparams)
+	if err != nil {
+		return spec, err
+	}
+
+	app, _, err = cfClient.UpdateApplication(app)
+	if err != nil {
+		return spec, err
+	}
+
+	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	if err != nil {
+		return spec, err
+	}
+
+	return spec, nil
+}
+
+// Updates the app enviornment variables for creating or updating an instance.
+func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, app *ccv3.Application, info *ccv3.Info, instanceId string, params map[string]string) error {
+
+	var profiles []string
+	for key, value := range params {
+		_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
+			key: *types.NewFilteredString(value),
+		})
+
+		if key == "SPRING_CLOUD_CONFIG_SERVER_GIT_URI" {
+			profiles = append(profiles, "git")
+		}
+
+		if key == "SPRING_CLOUD_CONFIG_SERVER_VAULT_HOST" {
+			profiles = append(profiles, "vault")
+		}
+
+		if key == "SPRING_CLOUD_CONFIG_SERVER_COMPOSIT" {
+			profiles = append(profiles, "composit")
+		}
+
+		if key == "SPRING_CLOUD_CONFIG_SERVER_CREDHUB" {
+			profiles = append(profiles, "credhub")
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	var profileString strings.Builder
+	for index, profile := range profiles {
+		profileString.WriteString(profile)
+		if index < len(profiles)+1 {
+			profileString.WriteString(", ")
+		}
+	}
+
+	_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
+		"JWK_SET_URI":            *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
+		"SKIP_SSL_VALIDATION":    *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
+		"REQUIRED_AUDIENCE":      *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
+		"SPRING_PROFILES_ACTIVE": *types.NewFilteredString(profileString.String()),
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (broker *ConfigServerBroker) GetBinding(ctx context.Context, instanceID, bindingID string) (brokerapi.GetBindingSpec, error) {
@@ -239,14 +336,13 @@ func (broker *ConfigServerBroker) GetInstance(ctx context.Context, instanceID st
 }
 
 func (broker *ConfigServerBroker) LastBindingOperation(ctx context.Context, instanceID, bindingID string, details brokerapi.PollDetails) (brokerapi.LastOperation, error) {
-	//create client
-
 	return brokerapi.LastOperation{}, errors.New("not implemented")
 }
 
 func makeAppName(instanceId string) string {
 	return "config-server-" + instanceId
 }
+
 func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params map[string]string) error {
 	cfClient, err := broker.getClient()
 	if err != nil {
@@ -275,22 +371,8 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 		return err
 	}
 
-	for key, value := range params {
-		_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-			key: *types.NewFilteredString(value),
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	_, _, err = cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-		//"SPRING_CLOUD_CONFIG_SERVER_GIT_URI": *types.NewFilteredString(params.GitRepoUrl),
-		//"JBP_CONFIG_OPEN_JDK_JRE": *types.NewFilteredString("{ jre: { version: 8.+ } }"),
-		"JWK_SET_URI":         *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
-		"SKIP_SSL_VALIDATION": *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
-		"REQUIRED_AUDIENCE":   *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
-	})
+	broker.Logger.Info("Updating Environment")
+	err = broker.updateAppEnvironment(cfClient, &app, &info, instanceId, params)
 
 	if err != nil {
 		return err
