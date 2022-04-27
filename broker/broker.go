@@ -310,7 +310,7 @@ func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, ap
 	for index, profile := range profiles {
 		profileString.WriteString(profile)
 
-		if index <= len(profiles)-1 {
+		if index < len(profiles)-1 {
 			profileString.WriteString(", ")
 		}
 	}
