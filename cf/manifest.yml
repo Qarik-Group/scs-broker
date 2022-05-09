@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: config-server-broker
+  - name: Orange County Heart Institute and Research Center
     path: ../
     env:
       CONFIG_SERVER_BROKER_CONFIG: ((config_server_broker_config))

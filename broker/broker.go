@@ -76,11 +76,11 @@ func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID stri
 		return spec, errors.New("plan_id not recognized")
 	}
 
-	err = broker.createBasicInstance(instanceID, mapparams)
+	url, err := broker.createBasicInstance(instanceID, mapparams)
 	if err != nil {
 		return spec, err
 	}
-
+	spec.DashboardURL = url + "/dashboard"
 	return spec, nil
 }
 
@@ -263,7 +263,7 @@ func (broker *ConfigServerBroker) Update(cxt context.Context, instanceID string,
 		return spec, err
 	}
 
-	app, _, err = cfClient.UpdateApplication(app)
+	_, _, err = cfClient.UpdateApplication(app)
 	if err != nil {
 		return spec, err
 	}
@@ -344,10 +344,10 @@ func makeAppName(instanceId string) string {
 	return "config-server-" + instanceId
 }
 
-func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params map[string]string) error {
+func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params map[string]string) (string, error) {
 	cfClient, err := broker.getClient()
 	if err != nil {
-		return errors.New("Couldn't start session: " + err.Error())
+		return "", errors.New("Couldn't start session: " + err.Error())
 	}
 	appName := makeAppName(instanceId)
 	spaceGUID := broker.Config.InstanceSpaceGUID
@@ -364,19 +364,19 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 		},
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	info, _, _, err := cfClient.GetInfo()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	broker.Logger.Info("Updating Environment")
 	err = broker.updateAppEnvironment(cfClient, &app, &info, instanceId, params)
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	broker.Logger.Info("Creating Package")
@@ -388,7 +388,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 			},
 		})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	broker.Logger.Info("Uploading Package")
@@ -397,7 +397,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 
 	fi, err := os.Stat(artifact)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	broker.Logger.Info(fmt.Sprintf("Uploading: %s from %s size(%d)", fi.Name(), artifact, fi.Size()))
@@ -405,7 +405,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	upkg, uwarnings, err := cfClient.UploadPackage(pkg, artifact)
 	broker.showWarnings(uwarnings, upkg)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	broker.Logger.Info("Polling Package")
@@ -413,37 +413,37 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	broker.showWarnings(pwarnings, pkg)
 	if err != nil {
 
-		return err
+		return "", err
 	}
 
 	broker.Logger.Info("Creating Build")
 	build, cwarnings, err := cfClient.CreateBuild(ccv3.Build{PackageGUID: pkg.GUID})
 	broker.showWarnings(cwarnings, build)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	broker.Logger.Info("polling build")
 	droplet, pbwarnings, err := broker.pollBuild(build.GUID, appName)
 	broker.showWarnings(pbwarnings, droplet)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	broker.Logger.Info("set application droplet")
 	_, _, err = cfClient.SetApplicationDroplet(app.GUID, droplet.GUID)
 	if err != nil {
-		return err
+		return "", err
 	}
 	domains, _, err := cfClient.GetDomains(
 		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},
 	)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if len(domains) == 0 {
-		return errors.New("no domains found for this instance")
+		return "", errors.New("no domains found for this instance")
 	}
 
 	route, _, err := cfClient.CreateRoute(ccv3.Route{
@@ -452,18 +452,20 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 		Host:       appName,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 	_, err = cfClient.MapRoute(route.GUID, app.GUID)
 	if err != nil {
-		return err
+		return "", err
 	}
-	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	broker.Logger.Info(route.URL)
+
+	return route.URL, nil
 }
 
 func (broker *ConfigServerBroker) pollBuild(buildGUID string, appName string) (ccv3.Droplet, ccv3.Warnings, error) {
