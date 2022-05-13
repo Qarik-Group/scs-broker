@@ -280,10 +280,10 @@ func (broker *ConfigServerBroker) Update(cxt context.Context, instanceID string,
 func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, app *ccv3.Application, info *ccv3.Info, instanceId string, jsonparams string, params map[string]string) error {
 
 	var profiles []string
-	for key, _ := range params {
-		//	_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-		//			key: *types.NewFilteredString(value),
-		//		})
+	for key, value := range params {
+		_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
+			key: *types.NewFilteredString(value),
+		})
 
 		if key == "SPRING_CLOUD_CONFIG_SERVER_GIT_URI" {
 			profiles = append(profiles, "git")
@@ -301,9 +301,9 @@ func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, ap
 			profiles = append(profiles, "credhub")
 		}
 
-		//		if err != nil {
-		//			return err
-		//		}
+		if err != nil {
+			return err
+		}
 	}
 
 	var profileString strings.Builder
