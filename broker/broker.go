@@ -76,11 +76,11 @@ func (broker *ConfigServerBroker) Provision(ctx context.Context, instanceID stri
 		return spec, errors.New("plan_id not recognized")
 	}
 
-	url, err := broker.createBasicInstance(instanceID, mapparams)
+	url, err := broker.createBasicInstance(instanceID, string(serviceDetails.RawParameters), mapparams)
 	if err != nil {
 		return spec, err
 	}
-	spec.DashboardURL = url + "/dashboard"
+	spec.DashboardURL = url
 	return spec, nil
 }
 
@@ -258,7 +258,7 @@ func (broker *ConfigServerBroker) Update(cxt context.Context, instanceID string,
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.updateAppEnvironment(cfClient, &app, &info, instanceID, mapparams)
+	err = broker.updateAppEnvironment(cfClient, &app, &info, instanceID, string(details.RawParameters), mapparams)
 	if err != nil {
 		return spec, err
 	}
@@ -277,13 +277,13 @@ func (broker *ConfigServerBroker) Update(cxt context.Context, instanceID string,
 }
 
 // Updates the app enviornment variables for creating or updating an instance.
-func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, app *ccv3.Application, info *ccv3.Info, instanceId string, params map[string]string) error {
+func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, app *ccv3.Application, info *ccv3.Info, instanceId string, jsonparams string, params map[string]string) error {
 
 	var profiles []string
-	for key, value := range params {
-		_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-			key: *types.NewFilteredString(value),
-		})
+	for key, _ := range params {
+		//	_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
+		//			key: *types.NewFilteredString(value),
+		//		})
 
 		if key == "SPRING_CLOUD_CONFIG_SERVER_GIT_URI" {
 			profiles = append(profiles, "git")
@@ -301,9 +301,9 @@ func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, ap
 			profiles = append(profiles, "credhub")
 		}
 
-		if err != nil {
-			return err
-		}
+		//		if err != nil {
+		//			return err
+		//		}
 	}
 
 	var profileString strings.Builder
@@ -316,10 +316,11 @@ func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, ap
 	}
 
 	_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-		"JWK_SET_URI":            *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
-		"SKIP_SSL_VALIDATION":    *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
-		"REQUIRED_AUDIENCE":      *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
-		"SPRING_PROFILES_ACTIVE": *types.NewFilteredString(profileString.String()),
+		"SPRING_APPLICATION_JSON": *types.NewFilteredString(jsonparams),
+		"JWK_SET_URI":             *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
+		"SKIP_SSL_VALIDATION":     *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
+		"REQUIRED_AUDIENCE":       *types.NewFilteredString(fmt.Sprintf("config-server.%v", instanceId)),
+		"SPRING_PROFILES_ACTIVE":  *types.NewFilteredString(profileString.String()),
 	})
 	if err != nil {
 		return err
@@ -344,7 +345,7 @@ func makeAppName(instanceId string) string {
 	return "config-server-" + instanceId
 }
 
-func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params map[string]string) (string, error) {
+func (broker *ConfigServerBroker) createBasicInstance(instanceId string, jsonparams string, params map[string]string) (string, error) {
 	cfClient, err := broker.getClient()
 	if err != nil {
 		return "", errors.New("Couldn't start session: " + err.Error())
@@ -373,7 +374,7 @@ func (broker *ConfigServerBroker) createBasicInstance(instanceId string, params 
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.updateAppEnvironment(cfClient, &app, &info, instanceId, params)
+	err = broker.updateAppEnvironment(cfClient, &app, &info, instanceId, jsonparams, params)
 
 	if err != nil {
 		return "", err
