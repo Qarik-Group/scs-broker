@@ -48,7 +48,7 @@ Once its running you can run through the service lifecycle manually using [eden]
 First provision a service:
 ```
 $ eden --client admin --client-secret <service-broker-password> --url http://localhost:8080 provision -s config-server -p basic -P '{"gitRepoUrl": "https://github.com/spring-cloud-samples/config-repo"}'
-provision:   config-server/basic - name: config-server-basic-602effa1-13f5-408b-b25b-15a7d6aa2500
+provision:   config-server/default - name: config-server-602effa1-13f5-408b-b25b-15a7d6aa2500
 provision:   done
 ```
 
@@ -100,15 +100,4 @@ onfig-repo/foo.properties","source":{"foo":"from foo props","democonfigclient.me
 ml (document #0)","source":{"info.description":"Spring Cloud Samples","info.url":"https://github.com/spring-cloud-samples","eureka.client.serviceUrl.defaultZone":"http://localhost:8
 761/eureka/","foo":"baz"}}]}* Closing connection 0
 ```
-Once things are verified we can destroy everything again:
-```
-$ eden --client admin --client-secret admin --url http://localhost:8080 unbind -i config-server-basic-602effa1-13f5-408b-b25b-15a7d6aa2500 -b config-server-a553345a-4897-439e-a89e-f3aa7418ba3a
-Success
-$ eden --client admin --client-secret admin --url http://localhost:8080 deprovision -i 602effa1-13f5-408b-b25b-15a7d6aa2500
-deprovision: config-server/basic - guid: 602effa1-13f5-408b-b25b-15a7d6aa2500
-deprovision: done
-```
 
-## Image
-
-The image that gets run (starkandwayne/spring-cloud-config-server:1.1.0) is defined on the [oauth](https://github.com/starkandwayne/spring-cloud-config-server/tree/oauth) branch of the S&W for of [hyness/spring-cloud-config-server](https://github.com/hyness/spring-cloud-config-server). It currently doesn't support any kind of `skip-ssl-verification` option so the `jwk_set_key` endpoint of the uaa must use ssl with a verifieable cert.
