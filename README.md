@@ -2,102 +2,38 @@
 
 This repo implements a service broker for config server.
 
-## Demo
+## Setup
 
-Here is a walkthrough of the complete provision / bind / unbind / deprovision story executed from the terminal.
+1. Clone repo to directory or home.
+2. Create a Config-Server space (optional) under system.
+```bash
+$cf target -o system
+$cf create-space config-server
+$cf target -o system -s config-server
+```
+3. Modify the contents of cf/secrets.yml add the credentials needed, the instance guid for the space being used, etc.
+#### Broker Auth Section
+- **user** - *The user needed for creating the service-broker*
+- **password** - *The password you create for creating the service-broker*
+#### Cloud Foundry Config Section
+- **api_url** - *The Cloud Foundry API URL*
+- **cf_username** - *The user in CF that has permissions to create services with the API*
+- **cf_password** - *the password for above user*
+- **uaa_client_id** - *The Client ID, which can possibly be found in CredHub. If not the UAA client needs to be created*
+- **uaa_client_secret** - *The secret for the client id above*
+- **instance_space_guid** - *The GUID for the current space, This can be found by doing `cf space config-server --guid`*
+- **instance_domain** - *The instance domain which is likely the same as the API base domain*
+- **config_server_download_uri** - *This can be either a file:// or an https:// protocol. The use of file will look within the service-broker itself and should reference the location of the config-server.jar that has been packaged along with the broker*
 
-Some configuration for the broker is pre-populated under [cf/broker_config.yml](./cf/broker_config.yml).
+4. While within the config-server-broker base directory, run `make push` if the binary doesn't need to be rebuilt. The only reason the binary may need to be rebuilt is if there is a code change. To build, run `make build` first, then run `make push`. All jars should be located under the app/artifacts directory, the binary should be located under the app directory. The app directory is what gets pushed to the CF container.
 
-Before running the broker you must populate a file with sensitive information.
-First we should create a uaa client that can create other clients for the `bind` oporation.
+5. Create the service broker.
 ```
-$ uaac client add config-server-broker --name config-server-broker --authorized_grant_types client_credentials --authorities clients.write,clients.read,clients.admin
-```
-When prompted enter the password.
+$ cf create-service-broker [user from the Broker Auth section] [password from the Broker Auth section] [App URL created for the running app]
 
-Then fill out the file:
+6. Once the push is complete, the service broker is now running. You should now be able to create a service like the following example.
 ```
-$ cat <<EOF > cf/secrets.yml
-broker_auth:
-  user: admin
-  password: <broker-password>
-cloud_foundry_config:
-  api_url: <cf-api-url>
-  skip_ssl_validation: true
-  cf_username: <cf-username>
-  cf_password: <cf-password>
-  uaa_client_id: <client-id-for-uaa>
-  uaa_client_secret: "client-secret-for-uaa>"
-instance_space_guid: "<space-guid-where-to-push-instances>"
-instance_domain: "<cf-domain-to-use-for-routing-to-instance>"
-EOF
-```
-
-Then load the config into the environment:
-```
-$ export CONFIG_SERVER_BROKER_CONFIG=$(spruce merge cf/broker_config.yml cf/secrets.yml | spruce json )
-```
-And finally run the broker:
-```
-$ make run
-go run ./main.go
-{"timestamp":"1592851636.363440990","source":"config-server-broker","message":"config-server-broker.Starting Config Server broker","log_level":1,"data":{}}
+$cf create-service config-server default test-service -c "whatever json configuration you wish to use for config-server - see config-server docs from Spring.io"
 ```
 
-Once its running you can run through the service lifecycle manually using [eden](https://github.com/starkandwayne/eden).
-First provision a service:
-```
-$ eden --client admin --client-secret <service-broker-password> --url http://localhost:8080 provision -s config-server -p basic -P '{"gitRepoUrl": "https://github.com/spring-cloud-samples/config-repo"}'
-provision:   config-server/default - name: config-server-602effa1-13f5-408b-b25b-15a7d6aa2500
-provision:   done
-```
-
-Then create a binding:
-```
-$ eden --client admin --client-secret admin --url http://localhost:8080 bind -i 602effa1-13f5-408b-b25b-15a7d6aa2500
-Success
-
-Run 'eden credentials -i config-server-basic-602effa1-13f5-408b-b25b-15a7d6aa2500 -b config-server-df0a2f93-9700-47a5-83b6-0ef14b3d76c7' to see credentials
-$ eden --client admin --client-secret admin --url http://localhost:8080 credentials -i config-server-basic-602effa1-13f5-408b-b25b-15a7d6aa2500 -b config-server-df0a2f93-9700-47a5-83b6-0ef14b3d76c7
-{
-  "client_id": "config-server-binding-a553345a-4897-439e-a89e-f3aa7418ba3a",
-  "client_secret": "Q5lv4CBapnzo3WOQANIGAB4u9Jq6Qa"
-}
-```
-
-Now we can verify that things are working by testing wether we can access config via the provided credentials. For that we first need to get a token via uaac (input the client_secret when it asks for a password). Note that this currently only works with ssl validation turned on.
-
-```
-$ uaac token client get config-server-binding-a553345a-4897-439e-a89e-f3aa7418ba3a
-
-Successfully fetched token via client credentials grant.
-Target: https://uaa.hol.starkandwayne.com
-Context: config-server-binding-a553345a-4897-439e-a89e-f3aa7418ba3a, from client config-server-binding-a553345a-4897-439e-a89e-f3aa7418ba3a
-```
-
-Then look up the token:
-```
-$ % uaac context config-server-binding-a553345a-4897-439e-a89e-f3aa7418ba3a
-
-[0]*[https://uaa.hol.starkandwayne.com]
-  skip_ssl_validation: true
-
-  [1]*[config-server-binding-a553345a-4897-439e-a89e-f3aa7418ba3a]
-      client_id: config-server-binding-a553345a-4897-439e-a89e-f3aa7418ba3a
-      access_token: eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vdWFhLmhvbC5zdGFya2FuZHdheW5lLmNvbS90b2tlbl9rZXlzIiwia2lkIjoia2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJqdGkiOiJlMWI1MzNhYjQzODY0NjYwYTc5NmNlMTM0MzI2Yjc4NyIsInN1YiI6ImNvbmZpZy1zZXJ2ZXItYmluZGluZy1hNTUzMzQ1YS00ODk3LTQzOWUtYTg5ZS1mM2FhNzQxOGJhM2EiLCJhdXRob3JpdGllcyI6WyJ1YWEubm9uZSJdLCJzY29wZSI6WyJ1YWEubm9uZSJdLCJjbGllbnRfaWQiOiJjb25maWctc2VydmVyLWJpbmRpbmctYTU1MzM0NWEtNDg5Ny00MzllLWE4OWUtZjNhYTc0MThiYTNhIiwiY2lkIjoiY29uZmlnLXNlcnZlci1iaW5kaW5nLWE1NTMzNDVhLTQ4OTctNDM5ZS1hODllLWYzYWE3NDE4YmEzYSIsImF6cCI6ImNvbmZpZy1zZXJ2ZXItYmluZGluZy1hNTUzMzQ1YS00ODk3LTQzOWUtYTg5ZS1mM2FhNzQxOGJhM2EiLCJncmFudF90eXBlIjoiY2xpZW50X2NyZWRlbnRpYWxzIiwicmV2X3NpZyI6IjM3YWE2OTAyIiwiaWF0IjoxNTkyODUyNjAzLCJleHAiOjE1OTI4OTU4MDMsImlzcyI6Imh0dHBzOi8vdWFhLmhvbC5zdGFya2FuZHdheW5lLmNvbS9vYXV0aC90b2tlbiIsInppZCI6InVhYSIsImF1ZCI6WyJjb25maWctc2VydmVyLWJpbmRpbmctYTU1MzM0NWEtNDg5Ny00MzllLWE4OWUtZjNhYTc0MThiYTNhIl19.ocG4LreYNLCsDgP-Xy2KYXgJ7qMC9zy6ok7YSOw-meSSx_X6jsbYqADK598BsHkxVBklhvUpn8FK0DdLKIvFJcYGOS3uZRw56_biaO1BTRR_akRopSRxNh4nR1qyNPtkGC2pfxqNeyPQDeTSXPVROfFv6TRJQri2AVpDt0r6uz0o45buZDaSr81oHKT2ExnKx5qsYScFHgY6bVRk-wmztpvEezwlzgE42g3y726610WjKYA19VhP1rVcBwY-kD9tPkfviaDFhbiaGQDR94a45kvoKAcK2QhBeGooIoBoOaJzrx8SSlseSJHMEOjvrfXhpRC0P5DfsOGqh3dFJ20U-Q
-      token_type: bearer
-      expires_in: 43199
-      scope: uaa.none
-      jti: e1b533ab43864660a796ce134326b787
-$ TOKEN=eyJhbGciOiJSUzI1NiIsImprdSI6Imh0dHBzOi8vdWFhLmhvbC5zdGFya2FuZHdheW5lLmNvbS90b2tlbl9rZXlzIiwia2lkIjoia2V5LTEiLCJ0eXAiOiJKV1QifQ.eyJqdGkiOiJlMWI1MzNhYjQzODY0NjYwYTc5NmNlMTM0MzI2Yjc4NyIsInN1YiI6ImNvbmZpZy1zZXJ2ZXItYmluZGluZy1hNTUzMzQ1YS00ODk3LTQzOWUtYTg5ZS1mM2FhNzQxOGJhM2EiLCJhdXRob3JpdGllcyI6WyJ1YWEubm9uZSJdLCJzY29wZSI6WyJ1YWEubm9uZSJdLCJjbGllbnRfaWQiOiJjb25maWctc2VydmVyLWJpbmRpbmctYTU1MzM0NWEtNDg5Ny00MzllLWE4OWUtZjNhYTc0MThiYTNhIiwiY2lkIjoiY29uZmlnLXNlcnZlci1iaW5kaW5nLWE1NTMzNDVhLTQ4OTctNDM5ZS1hODllLWYzYWE3NDE4YmEzYSIsImF6cCI6ImNvbmZpZy1zZXJ2ZXItYmluZGluZy1hNTUzMzQ1YS00ODk3LTQzOWUtYTg5ZS1mM2FhNzQxOGJhM2EiLCJncmFudF90eXBlIjoiY2xpZW50X2NyZWRlbnRpYWxzIiwicmV2X3NpZyI6IjM3YWE2OTAyIiwiaWF0IjoxNTkyODUyNjAzLCJleHAiOjE1OTI4OTU4MDMsImlzcyI6Imh0dHBzOi8vdWFhLmhvbC5zdGFya2FuZHdheW5lLmNvbS9vYXV0aC90b2tlbiIsInppZCI6InVhYSIsImF1ZCI6WyJjb25maWctc2VydmVyLWJpbmRpbmctYTU1MzM0NWEtNDg5Ny00MzllLWE4OWUtZjNhYTc0MThiYTNhIl19.ocG4LreYNLCsDgP-Xy2KYXgJ7qMC9zy6ok7YSOw-meSSx_X6jsbYqADK598BsHkxVBklhvUpn8FK0DdLKIvFJcYGOS3uZRw56_biaO1BTRR_akRopSRxNh4nR1qyNPtkGC2pfxqNeyPQDeTSXPVROfFv6TRJQri2AVpDt0r6uz0o45buZDaSr81oHKT2ExnKx5qsYScFHgY6bVRk-wmztpvEezwlzgE42g3y726610WjKYA19VhP1rVcBwY-kD9tPkfviaDFhbiaGQDR94a45kvoKAcK2QhBeGooIoBoOaJzrx8SSlseSJHMEOjvrfXhpRC0P5DfsOGqh3dFJ20U-Q
-```
-
-And curl the config endpoint:
-```
-$ curl -v -H "Authorization: bearer ${TOKEN}" config-server-602effa1-13f5-408b-b25b-15a7d6aa2500.hol.starkandwayne.com/foo/foo
-{"name":"foo","profiles":["foo"],"label":null,"version":"bb51f4173258ae3481c61b95b503c13862ccfba7","state":null,"propertySources":[{"name":"https://github.com/spring-cloud-samples/c
-onfig-repo/foo.properties","source":{"foo":"from foo props","democonfigclient.message":"hello spring io"}},{"name":"https://github.com/spring-cloud-samples/config-repo/application.y
-ml (document #0)","source":{"info.description":"Spring Cloud Samples","info.url":"https://github.com/spring-cloud-samples","eureka.client.serviceUrl.defaultZone":"http://localhost:8
-761/eureka/","foo":"baz"}}]}* Closing connection 0
-```
 
