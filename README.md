@@ -30,7 +30,7 @@ $cf target -o system -s config-server
 5. Create the service broker.
 ```
 $ cf create-service-broker [user from the Broker Auth section] [password from the Broker Auth section] [App URL created for the running app]
-
+```
 6. Once the push is complete, the service broker is now running. You should now be able to create a service like the following example.
 ```
 $cf create-service config-server default test-service -c "whatever json configuration you wish to use for config-server - see config-server docs from Spring.io"
