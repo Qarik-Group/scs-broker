@@ -17,7 +17,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry-community/go-uaa"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
-	"github.com/starkandwayne/config-server-broker/config"
+	"github.com/starkandwayne/scs-broker/config"
 	scsccparser "github.com/starkandwayne/spring-cloud-services-cli-config-parser"
 )
 

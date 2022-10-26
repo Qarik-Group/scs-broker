@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/starkandwayne/config-server-broker/broker"
-	"github.com/starkandwayne/config-server-broker/config"
+	"github.com/starkandwayne/scs-broker/broker"
+	"github.com/starkandwayne/scs-broker/config"
 )
 
 type HttpArtifactTransport struct {

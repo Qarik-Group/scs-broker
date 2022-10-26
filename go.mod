@@ -1,4 +1,4 @@
-module github.com/starkandwayne/config-server-broker
+module github.com/starkandwayne/scs-broker
 
 go 1.14
 
