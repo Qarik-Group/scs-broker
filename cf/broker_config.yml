@@ -18,3 +18,4 @@
   instance_space_guid: (( param "Please override instance_space_guid" ))
   instance_domain: (( param "Please override instance_domain" ))
   config_server_download_uri: (( param "Please override config_server_download_uri" ))
+  registry_server_download_uri: (( param "Please override registry_server_download_uri" ))

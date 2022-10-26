@@ -1,6 +1,6 @@
 ---
 applications:
-  - name: config-server-broker
+  - name: scs-broker
     path: ../
     env:
-      CONFIG_SERVER_BROKER_CONFIG: ((config_server_broker_config))
+      SCS_BROKER_CONFIG: ((scs_broker_config))
