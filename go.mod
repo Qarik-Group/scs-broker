@@ -16,11 +16,13 @@ require (
 	code.cloudfoundry.org/cli v6.51.0+incompatible
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	github.com/cloudfoundry-community/go-cf-clients-helper v1.0.1
+	github.com/cloudfoundry-community/go-cfclient v0.0.0-20220930021109-9c4e6c59ccf1
 	github.com/cloudfoundry-community/go-uaa v0.3.1
 	github.com/drewolson/testflight v1.0.0 // indirect
 	github.com/gorilla/mux v1.7.4 // indirect
+	github.com/labstack/echo/v4 v4.9.0
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
 	github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.2
-	gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
