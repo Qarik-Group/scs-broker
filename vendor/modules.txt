@@ -60,8 +60,6 @@ github.com/charlievieth/fs
 # github.com/cloudfoundry-community/go-cf-clients-helper v1.0.1
 ## explicit
 github.com/cloudfoundry-community/go-cf-clients-helper
-# github.com/cloudfoundry-community/go-cfclient v0.0.0-20220930021109-9c4e6c59ccf1
-## explicit
 # github.com/cloudfoundry-community/go-uaa v0.3.1
 ## explicit
 github.com/cloudfoundry-community/go-uaa
@@ -88,7 +86,10 @@ github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/golang/protobuf v1.5.2
+## explicit
 github.com/golang/protobuf/proto
+# github.com/google/go-cmp v0.5.8
+## explicit
 # github.com/google/uuid v1.0.0
 github.com/google/uuid
 # github.com/gorilla/mux v1.7.4
@@ -98,13 +99,13 @@ github.com/gorilla/mux
 github.com/gorilla/websocket
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/labstack/echo/v4 v4.9.0
-## explicit
 # github.com/mailru/easyjson v0.7.1 => github.com/mailru/easyjson v0.0.0-20180323154445-8b799c424f57
 github.com/mailru/easyjson
 github.com/mailru/easyjson/buffer
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
+# github.com/mattn/go-colorable v0.1.11
+## explicit
 # github.com/mattn/go-runewidth v0.0.9
 github.com/mattn/go-runewidth
 # github.com/pborman/uuid v1.2.0
@@ -126,11 +127,15 @@ github.com/sirupsen/logrus
 # github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.2
 ## explicit
 github.com/starkandwayne/spring-cloud-services-cli-config-parser
+# github.com/stretchr/testify v1.7.0
+## explicit
 # github.com/tedsuo/rata v1.0.0
 github.com/tedsuo/rata
 # golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
+## explicit
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
+## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 # golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
@@ -153,6 +158,7 @@ google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
 # google.golang.org/protobuf v1.28.0
+## explicit
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
@@ -183,6 +189,7 @@ google.golang.org/protobuf/types/descriptorpb
 # gopkg.in/cheggaaa/pb.v1 v1.0.28
 gopkg.in/cheggaaa/pb.v1
 # gopkg.in/yaml.v2 v2.4.0
+## explicit
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
