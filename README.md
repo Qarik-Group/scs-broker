@@ -37,3 +37,6 @@ $cf create-service config-server default test-service -c "whatever json configur
 ```
 
 
+## History ##
+
+* v0.0.1 - Initial Release
