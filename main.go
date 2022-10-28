@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"os"
-	"strings"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/brokerapi"
@@ -28,21 +27,27 @@ func main() {
 		})
 	}
 
-	brokerLogger.Info("preparing transport")
-	httpTransport = httpartifacttransport.NewHttpArtifactTransport(brokerConf, brokerLogger)
+	//TODO: uncomment this when I figure out where we're hosting the jars -- dwalters
+	//brokerLogger.Info("preparing transport")
+	//httpTransport = httpartifacttransport.NewHttpArtifactTransport(brokerConf, brokerLogger)
 
-	brokerLogger.Info("downloading-artifact")
-	url := brokerConf.ConfigServerDownloadURI
+	//brokerLogger.Info("downloading-artifact")
+	//url := brokerConf.ConfigServerDownloadURI
+	//regUrl := brokerConf.RegistryServerDownloadURI
 
-	if strings.HasPrefix(url, "file://") {
-		httpTransport.EnableHttpFileTransport()
-	}
+	//if strings.HasPrefix(url, "file://") {
+	//httpTransport.EnableHttpFileTransport()
+	//}
 
-	err = httpTransport.DownloadArtifact("spring-cloud-config-server.jar", url)
-	if err != nil {
-		brokerLogger.Fatal("Error downloading config-server jar", err, lager.Data{"uri": url})
-	}
-	brokerLogger.Info("download-Complete")
+	//err = httpTransport.DownloadArtifact("spring-cloud-config-server.jar", url)
+	//if err != nil {
+	//brokerLogger.Fatal("Error downloading config-server jar", err, lager.Data{"uri": url})
+	//}
+	//err = httpTransport.DownloadArtifact("spring-cloud-registry-server.jar", regUrl)
+	//if err != nil {
+	//brokerLogger.Fatal("Error downloading registry-server jar", err, lager.Data{"uri": regUrl})
+	//}
+	//brokerLogger.Info("download-Complete")
 	brokerLogger.Info("starting")
 
 	serviceBroker := &broker.ConfigServerBroker{

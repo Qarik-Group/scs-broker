@@ -60,6 +60,8 @@ github.com/charlievieth/fs
 # github.com/cloudfoundry-community/go-cf-clients-helper v1.0.1
 ## explicit
 github.com/cloudfoundry-community/go-cf-clients-helper
+# github.com/cloudfoundry-community/go-cfclient v0.0.0-20220930021109-9c4e6c59ccf1
+## explicit
 # github.com/cloudfoundry-community/go-uaa v0.3.1
 ## explicit
 github.com/cloudfoundry-community/go-uaa
@@ -85,7 +87,7 @@ github.com/cppforlife/go-patch/patch
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
-# github.com/golang/protobuf v1.4.2
+# github.com/golang/protobuf v1.5.2
 github.com/golang/protobuf/proto
 # github.com/google/uuid v1.0.0
 github.com/google/uuid
@@ -96,6 +98,8 @@ github.com/gorilla/mux
 github.com/gorilla/websocket
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/labstack/echo/v4 v4.9.0
+## explicit
 # github.com/mailru/easyjson v0.7.1 => github.com/mailru/easyjson v0.0.0-20180323154445-8b799c424f57
 github.com/mailru/easyjson
 github.com/mailru/easyjson/buffer
@@ -124,19 +128,22 @@ github.com/sirupsen/logrus
 github.com/starkandwayne/spring-cloud-services-cli-config-parser
 # github.com/tedsuo/rata v1.0.0
 github.com/tedsuo/rata
-# golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
+# golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/net v0.0.0-20200602114024-627f9648deb9
+# golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 # golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20200610111108-226ff32320da
+# golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+golang.org/x/term
 # google.golang.org/appengine v1.6.1
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/base
@@ -145,7 +152,7 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/protobuf v1.24.0
+# google.golang.org/protobuf v1.28.0
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
@@ -156,28 +163,28 @@ google.golang.org/protobuf/internal/encoding/messageset
 google.golang.org/protobuf/internal/encoding/tag
 google.golang.org/protobuf/internal/encoding/text
 google.golang.org/protobuf/internal/errors
-google.golang.org/protobuf/internal/fieldnum
-google.golang.org/protobuf/internal/fieldsort
 google.golang.org/protobuf/internal/filedesc
 google.golang.org/protobuf/internal/filetype
 google.golang.org/protobuf/internal/flags
-google.golang.org/protobuf/internal/genname
+google.golang.org/protobuf/internal/genid
 google.golang.org/protobuf/internal/impl
-google.golang.org/protobuf/internal/mapsort
+google.golang.org/protobuf/internal/order
 google.golang.org/protobuf/internal/pragma
 google.golang.org/protobuf/internal/set
 google.golang.org/protobuf/internal/strs
 google.golang.org/protobuf/internal/version
 google.golang.org/protobuf/proto
+google.golang.org/protobuf/reflect/protodesc
 google.golang.org/protobuf/reflect/protoreflect
 google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
+google.golang.org/protobuf/types/descriptorpb
 # gopkg.in/cheggaaa/pb.v1 v1.0.28
 gopkg.in/cheggaaa/pb.v1
-# gopkg.in/yaml.v2 v2.3.0
+# gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200605160147-a5ece683394c
+# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 ## explicit
 gopkg.in/yaml.v3
 # github.com/docker/docker => github.com/docker/engine v17.12.0-ce-rc1.0.20200531234253-77e06fda0c94+incompatible
