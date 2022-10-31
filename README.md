@@ -39,6 +39,7 @@ $cf create-service config-server default test-service -c "whatever json configur
 
 ## History ##
 
+* v0.0.4 - Now with configurable package names
 * v0.0.3 - Now without package fetching
 * v0.0.2 - Now with package fetching
 * v0.0.1 - Initial Release
