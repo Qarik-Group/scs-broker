@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
@@ -60,7 +61,8 @@ func (broker *ConfigServerBroker) createRegistryServerInstance(kind string, inst
 
 	broker.Logger.Info("Uploading Package")
 
-	artifact := "./" + ArtifactsDir + "/spring-cloud-" + kind + ".jar"
+	jarname := path.Base(broker.Config.RegistryServerDownloadURI)
+	artifact := "./" + ArtifactsDir + "/" + jarname
 
 	fi, err := os.Stat(artifact)
 	if err != nil {
