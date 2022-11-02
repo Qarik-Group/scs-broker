@@ -29,7 +29,7 @@ func main() {
 
 	brokerLogger.Info("starting")
 
-	serviceBroker := &broker.ConfigServerBroker{
+	serviceBroker := &broker.SCSBroker{
 		Config: brokerConf,
 		Logger: brokerLogger,
 	}

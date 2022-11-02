@@ -5,25 +5,21 @@ import (
 	"fmt"
 
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	"github.com/starkandwayne/scs-broker/broker/utilities"
 )
 
-func (broker *ConfigServerBroker) Unbind(ctx context.Context, instanceID, bindingID string, details brokerapi.UnbindDetails, asyncAllowed bool) (brokerapi.UnbindSpec, error) {
+func (broker *SCSBroker) Unbind(ctx context.Context, instanceID, bindingID string, details brokerapi.UnbindDetails, asyncAllowed bool) (brokerapi.UnbindSpec, error) {
 	unbind := brokerapi.UnbindSpec{}
 
-	kind, err := getKind(details)
-	if err != nil {
-		return unbind, err
-	}
-
 	broker.Logger.Info("UnBind: GetUAAClient")
-	api, err := broker.getUaaClient()
+	api, err := broker.GetUaaClient()
 	if err != nil {
 		broker.Logger.Info("UnBind: Error in GetUAAClient")
 		return unbind, err
 	}
 
 	broker.Logger.Info("UnBind: makeClientIdForBinding")
-	clientId := makeClientIdForBinding(kind, bindingID)
+	clientId := utilities.MakeClientIdForBinding(details.ServiceID, bindingID)
 
 	broker.Logger.Info(fmt.Sprintf("UnBind: DeleteClient bindingID:%s clientid %s", bindingID, clientId))
 	_, err = api.DeleteClient(clientId)

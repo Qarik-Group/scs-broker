@@ -10,9 +10,9 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-func (broker *ConfigServerBroker) pollPackage(pkg ccv3.Package) (ccv3.Package, ccv3.Warnings, error) {
+func (broker *SCSBroker) pollPackage(pkg ccv3.Package) (ccv3.Package, ccv3.Warnings, error) {
 	var allWarnings ccv3.Warnings
-	cfClient, err := broker.getClient()
+	cfClient, err := broker.GetClient()
 	if err != nil {
 		return ccv3.Package{}, nil, errors.New("Couldn't start session: " + err.Error())
 	}

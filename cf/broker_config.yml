@@ -1,13 +1,26 @@
   broker_auth:
     user: (( param "Please override broker_auth.user" ))
     password: (( param "Please override broker_auth.password" ))
-  service_name: config-server
-  service_id: config-server
-  basic_plan_name: default
-  basic_plan_id: default
-  description: Broker to create config-servers
-  long_description: Broker to create config-servers
-  config_server_release_tag: Greenwich.SR3
+  broker_name: scs-broker
+  broker_id: scs-broker
+  description: Broker to create SCS services
+  long_description: Broker to create SCS services
+  instance_space_guid: (( param "Please override instance_space_guid" ))
+  instance_domain: (( param "Please override instance_domain" ))
+  artifacts_directory: "/app/artifacts"
+  services:
+    - service_name: config-server
+      service_id: config-server
+      service_plan_id: default
+      service_plan_name: default
+      service_description: Broker to create config-servers
+      service_download_uri: (( param "Please override config_server_download_uri" ))
+    - service_name: service-registry
+      service_id: service-registry
+      service_plan_id: default
+      service_plan_name: default
+      service_description: Broker to create config-servers
+      service_download_uri: (( param "Please override service_registry_download_uri" ))
   cloud_foundry_config:
     api_url: (( param "Please override cloud_foundry_config.api_url" ))
     skip_ssl_validation: true
@@ -15,7 +28,3 @@
     cf_password: (( param "Please override uaa_config.password" ))
     uaa_client_id: (( param "Please override uaa_config.client_id" ))
     uaa_client_secret: (( param "Please override uaa_config.client_secret" ))
-  instance_space_guid: (( param "Please override instance_space_guid" ))
-  instance_domain: (( param "Please override instance_domain" ))
-  config_server_download_uri: (( param "Please override config_server_download_uri" ))
-  registry_server_download_uri: (( param "Please override registry_server_download_uri" ))

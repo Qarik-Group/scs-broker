@@ -5,20 +5,17 @@ import (
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccerror"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	"github.com/starkandwayne/scs-broker/broker/utilities"
 )
 
-func (broker *ConfigServerBroker) Deprovision(ctx context.Context, instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
+func (broker *SCSBroker) Deprovision(ctx context.Context, instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
 	spec := brokerapi.DeprovisionServiceSpec{}
-	kind, err := getKind(details)
-	if err != nil {
-		return spec, err
-	}
 
-	cfClient, err := broker.getClient()
+	cfClient, err := broker.GetClient()
 	if err != nil {
 		return spec, err
 	}
-	appName := makeAppName(kind, instanceID)
+	appName := utilities.MakeAppName(details.ServiceID, instanceID)
 	app, _, err := cfClient.GetApplicationByNameAndSpace(appName, broker.Config.InstanceSpaceGUID)
 	appNotFound := ccerror.ApplicationNotFoundError{Name: appName}
 	if err == appNotFound {

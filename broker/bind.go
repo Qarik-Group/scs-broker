@@ -6,30 +6,27 @@ import (
 
 	"github.com/cloudfoundry-community/go-uaa"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	"github.com/starkandwayne/scs-broker/broker/utilities"
 )
 
-func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails, asyncAllowed bool) (brokerapi.Binding, error) {
+func (broker *SCSBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails, asyncAllowed bool) (brokerapi.Binding, error) {
 	binding := brokerapi.Binding{}
-	kind, err := getKind(details)
-	if err != nil {
-		return binding, err
-	}
 
 	broker.Logger.Info("Bind: GetUAAClient")
 
-	api, err := broker.getUaaClient()
+	api, err := broker.GetUaaClient()
 	if err != nil {
 		broker.Logger.Info("Bind: Error in getting client")
 		return binding, err
 	}
 
-	clientId := makeClientIdForBinding(kind, bindingID)
-	password := genClientPassword()
+	clientId := utilities.MakeClientIdForBinding(details.ServiceID, bindingID)
+	password := utilities.GenClientPassword()
 
 	client := uaa.Client{
 		ClientID:             clientId,
 		AuthorizedGrantTypes: []string{"client_credentials"},
-		Authorities:          []string{fmt.Sprintf("%s.%v.read", kind, instanceID)},
+		Authorities:          []string{fmt.Sprintf("%s.%v.read", details.ServiceID, instanceID)},
 		DisplayName:          clientId,
 		ClientSecret:         password,
 	}
@@ -43,7 +40,7 @@ func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingI
 	}
 
 	broker.Logger.Info("Bind: GetClient")
-	cfClient, err := broker.getClient()
+	cfClient, err := broker.GetClient()
 	if err != nil {
 		broker.Logger.Info("Bind: Error in GetClient")
 		return binding, err
@@ -59,7 +56,7 @@ func (broker *ConfigServerBroker) Bind(ctx context.Context, instanceID, bindingI
 
 	broker.Logger.Info("Bind: GetApplicationByNameAndSpace")
 
-	app, _, err := cfClient.GetApplicationByNameAndSpace(makeAppName(kind, instanceID), broker.Config.InstanceSpaceGUID)
+	app, _, err := cfClient.GetApplicationByNameAndSpace(utilities.MakeAppName(details.ServiceID, instanceID), broker.Config.InstanceSpaceGUID)
 	if err != nil {
 		broker.Logger.Info("Bind: Error in GetApplicationByNameAndSpace")
 		return binding, err

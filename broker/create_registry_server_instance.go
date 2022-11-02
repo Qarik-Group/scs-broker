@@ -10,14 +10,20 @@ import (
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
+	"github.com/starkandwayne/scs-broker/broker/utilities"
 )
 
-func (broker *ConfigServerBroker) createRegistryServerInstance(kind string, instanceId string, jsonparams string, params map[string]string) (string, error) {
-	cfClient, err := broker.getClient()
+func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instanceId string, jsonparams string, params map[string]string) (string, error) {
+	service, err := broker.GetServiceByServiceID(serviceId)
+	if err != nil {
+		return "", err
+	}
+
+	cfClient, err := broker.GetClient()
 	if err != nil {
 		return "", errors.New("Couldn't start session: " + err.Error())
 	}
-	appName := makeAppName(kind, instanceId)
+	appName := utilities.MakeAppName(serviceId, instanceId)
 	spaceGUID := broker.Config.InstanceSpaceGUID
 
 	broker.Logger.Info("Creating Application")
@@ -41,7 +47,7 @@ func (broker *ConfigServerBroker) createRegistryServerInstance(kind string, inst
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.updateAppEnvironment(cfClient, &app, &info, kind, instanceId, jsonparams, params)
+	err = broker.UpdateAppEnvironment(cfClient, &app, &info, serviceId, instanceId, jsonparams, params)
 
 	if err != nil {
 		return "", err
@@ -61,8 +67,8 @@ func (broker *ConfigServerBroker) createRegistryServerInstance(kind string, inst
 
 	broker.Logger.Info("Uploading Package")
 
-	jarname := path.Base(broker.Config.RegistryServerDownloadURI)
-	artifact := "./" + ArtifactsDir + "/" + jarname
+	jarname := path.Base(service.ServiceDownloadURI)
+	artifact := broker.Config.ArtifactsDir + "/" + jarname
 
 	fi, err := os.Stat(artifact)
 	if err != nil {
@@ -132,7 +138,7 @@ func (broker *ConfigServerBroker) createRegistryServerInstance(kind string, inst
 	// handle the node count
 	rc := &registryConfig{}
 	broker.Logger.Info("jsonparams == " + jsonparams)
-	rp, err := extractRegistryParams(jsonparams)
+	rp, err := utilities.ExtractRegistryParams(jsonparams)
 	if err != nil {
 		return "", err
 	}
@@ -155,7 +161,7 @@ func (broker *ConfigServerBroker) createRegistryServerInstance(kind string, inst
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.updateAppEnvironment(cfClient, &app, &info, kind, instanceId, rc.String(), params)
+	err = broker.UpdateAppEnvironment(cfClient, &app, &info, serviceId, instanceId, rc.String(), params)
 
 	if err != nil {
 		return "", err

@@ -8,14 +8,20 @@ import (
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
+	"github.com/starkandwayne/scs-broker/broker/utilities"
 )
 
-func (broker *ConfigServerBroker) createConfigServerInstance(kind string, instanceId string, jsonparams string, params map[string]string) (string, error) {
-	cfClient, err := broker.getClient()
+func (broker *SCSBroker) createConfigServerInstance(serviceId string, instanceId string, jsonparams string, params map[string]string) (string, error) {
+
+	service, err := broker.GetServiceByServiceID(serviceId)
+	if err != nil {
+		return "", err
+	}
+	cfClient, err := broker.GetClient()
 	if err != nil {
 		return "", errors.New("Couldn't start session: " + err.Error())
 	}
-	appName := makeAppName(kind, instanceId)
+	appName := utilities.MakeAppName(serviceId, instanceId)
 	spaceGUID := broker.Config.InstanceSpaceGUID
 
 	broker.Logger.Info("Creating Application")
@@ -39,7 +45,7 @@ func (broker *ConfigServerBroker) createConfigServerInstance(kind string, instan
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.updateAppEnvironment(cfClient, &app, &info, kind, instanceId, jsonparams, params)
+	err = broker.UpdateAppEnvironment(cfClient, &app, &info, serviceId, instanceId, jsonparams, params)
 
 	if err != nil {
 		return "", err
@@ -59,15 +65,15 @@ func (broker *ConfigServerBroker) createConfigServerInstance(kind string, instan
 
 	broker.Logger.Info("Uploading Package")
 
-	jarname := path.Base(broker.Config.ConfigServerDownloadURI)
-	artifact := "./" + ArtifactsDir + "/" + jarname
+	jarname := path.Base(service.ServiceDownloadURI)
+	artifact := broker.Config.ArtifactsDir + "/" + jarname
 
 	fi, err := os.Stat(artifact)
 	if err != nil {
 		return "", err
 	}
 
-	broker.Logger.Info(fmt.Sprintf("Uploading: %s from %s size(%d)", fi.Name(), artifact, fi.Size()))
+	broker.Logger.Info(fmt.Sprintf("Uploadinlsg: %s from %s size(%d)", fi.Name(), artifact, fi.Size()))
 
 	upkg, uwarnings, err := cfClient.UploadPackage(pkg, artifact)
 	broker.showWarnings(uwarnings, upkg)
