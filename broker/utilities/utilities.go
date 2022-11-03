@@ -73,29 +73,36 @@ func MakeAppName(serviceId string, instanceId string) string {
 	return serviceId + "-" + instanceId
 }
 
-func ExtractRegistryParams(details string) (map[string]interface{}, error) {
-	// decode the raw params
-	decoded := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(details), &decoded); err != nil {
-		return nil, err
+func ExtractRegistryParams(details string) (*RegistryParams, error) {
+	// just in case we got an empty payload
+	if len(details) == 0 {
+		details = `{"count" : 1}`
 	}
 
-	// get the registry-specific params that affect broker operations
-	rp := RegistryParams{}
+	rp := NewRegistryParams()
 
-	rp.Merge("count", decoded)
-	rp.Merge("application-security-groups", decoded)
-	for key, _ := range rp {
-		fmt.Println(key)
+	if err := json.Unmarshal([]byte(details), rp); err != nil {
+		return nil, err
 	}
 
 	return rp, nil
 }
 
-type RegistryParams map[string]interface{}
+func NewRegistryParams() *RegistryParams {
+	return &RegistryParams{RawCount: 1}
+}
 
-func (rp RegistryParams) Merge(key string, other map[string]interface{}) {
-	if value, found := other[key]; found {
-		rp[key] = value
+type RegistryParams struct {
+	RawCount                 int    `json:"count"`
+	ApplicationSecurityGroup string `json:"application_security_group"`
+}
+
+func (rp *RegistryParams) Count() (int, error) {
+	var err error = nil
+
+	if rp.RawCount < 1 {
+		err = fmt.Errorf("invalid node count: %d", rp.RawCount)
 	}
+
+	return rp.RawCount, err
 }
