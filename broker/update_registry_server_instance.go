@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/lager"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
 	"github.com/starkandwayne/scs-broker/broker/utilities"
@@ -59,19 +60,25 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		return spec, err
 	}
 
-	if count, found := rp["count"]; found {
-		if c, ok := count.(int); ok {
-			if c > 1 {
-				rc.Clustered()
-				err = broker.scaleRegistryServer(cfClient, &app, c, rc)
-				if err != nil {
-					return spec, err
-				}
-			} else {
-				rc.Standalone()
-			}
-		} else {
-			rc.Standalone()
+	count, err := rp.Count()
+	if err != nil {
+		return spec, err
+	}
+
+	if count > 1 {
+		rc.Clustered()
+	} else {
+		rc.Standalone()
+	}
+
+	// since this is an update, we need to scale, but only if the desired proc
+	// count has changed
+	procs, err := getApplicationProcessesByType(cfClient, app.GUID, "web")
+
+	if count != len(procs) {
+		err = broker.scaleRegistryServer(cfClient, &app, count, rc)
+		if err != nil {
+			return spec, err
 		}
 	}
 
@@ -88,4 +95,21 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	}
 
 	return spec, nil
+}
+
+func getApplicationProcessesByType(client *ccv3.Client, appGUID string, procType string) ([]ccv3.Process, error) {
+	filtered := make([]ccv3.Process, 0)
+
+	candidates, _, err := client.GetApplicationProcesses(appGUID)
+	if err != nil {
+		return filtered, err
+	}
+
+	for _, prospect := range candidates {
+		if prospect.Type == procType {
+			filtered = append(filtered, prospect)
+		}
+	}
+
+	return filtered, nil
 }

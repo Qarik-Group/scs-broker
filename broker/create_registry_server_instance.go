@@ -143,21 +143,21 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", err
 	}
 
-	if count, found := rp["count"]; found {
-		if c, ok := count.(int); ok {
-			if c > 1 {
-				rc.Clustered()
-				broker.Logger.Info(fmt.Sprintf("scaling to %d", c))
-				err = broker.scaleRegistryServer(cfClient, &app, c, rc)
-				if err != nil {
-					return "", err
-				}
-			} else {
-				rc.Standalone()
-			}
-		} else {
-			rc.Standalone()
+	count, err := rp.Count()
+	if err != nil {
+		return "", err
+	}
+
+	if count > 1 {
+		rc.Clustered()
+		rc.AddPeer(fmt.Sprintf("%s/eureka", route.URL))
+		broker.Logger.Info(fmt.Sprintf("scaling to %d", count))
+		err = broker.scaleRegistryServer(cfClient, &app, count, rc)
+		if err != nil {
+			return "", err
 		}
+	} else {
+		rc.Standalone()
 	}
 
 	broker.Logger.Info("Updating Environment")
