@@ -9,13 +9,13 @@ import (
 	"code.cloudfoundry.org/cli/util/configv3"
 )
 
-func (broker *ConfigServerBroker) pollBuild(buildGUID string, appName string) (ccv3.Droplet, ccv3.Warnings, error) {
+func (broker *SCSBroker) pollBuild(buildGUID string, appName string) (ccv3.Droplet, ccv3.Warnings, error) {
 	var allWarnings ccv3.Warnings
 
 	timeout := time.After(configv3.DefaultStagingTimeout)
 	interval := time.NewTimer(0)
 
-	cfClient, err := broker.getClient()
+	cfClient, err := broker.GetClient()
 	if err != nil {
 		return ccv3.Droplet{}, nil, errors.New("couldn't start session: " + err.Error())
 	}

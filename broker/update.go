@@ -6,18 +6,12 @@ import (
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
 )
 
-func (broker *ConfigServerBroker) Update(cxt context.Context, instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.UpdateServiceSpec, error) {
-	spec := brokerapi.UpdateServiceSpec{}
-
-	kind, err := getKind(details)
-	if err != nil {
-		return spec, err
-	}
+func (broker *SCSBroker) Update(cxt context.Context, instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.UpdateServiceSpec, error) {
 
 	var updater func(context.Context, string, brokerapi.UpdateDetails, bool) (brokerapi.UpdateServiceSpec, error)
 
-	switch kind {
-	case "registry-server":
+	switch details.ServiceID {
+	case "service-registry":
 		updater = broker.updateRegistryServerInstance
 	case "config-server":
 		updater = broker.updateConfigServerInstance

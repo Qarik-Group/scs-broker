@@ -6,23 +6,19 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	"github.com/starkandwayne/scs-broker/broker/utilities"
 	scsccparser "github.com/starkandwayne/spring-cloud-services-cli-config-parser"
 )
 
-func (broker *ConfigServerBroker) updateRegistryServerInstance(cxt context.Context, instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.UpdateServiceSpec, error) {
+func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.UpdateServiceSpec, error) {
 	spec := brokerapi.UpdateServiceSpec{}
 
-	kind, err := getKind(details)
-	if err != nil {
-		return spec, err
-	}
-
-	appName := makeAppName(kind, instanceID)
+	appName := utilities.MakeAppName(details.ServiceID, instanceID)
 	spaceGUID := broker.Config.InstanceSpaceGUID
 
 	broker.Logger.Info("update-service-instance", lager.Data{"plan-id": details.PlanID, "service-id": details.ServiceID})
 	envsetup := scsccparser.EnvironmentSetup{}
-	cfClient, err := broker.getClient()
+	cfClient, err := broker.GetClient()
 
 	if err != nil {
 		return spec, errors.New("Couldn't start session: " + err.Error())
@@ -43,12 +39,8 @@ func (broker *ConfigServerBroker) updateRegistryServerInstance(cxt context.Conte
 		return spec, err
 	}
 
-	if details.PlanID != "basic" {
-		return spec, errors.New("plan_id not recognized")
-	}
-
 	broker.Logger.Info("Updating Environment")
-	err = broker.updateAppEnvironment(cfClient, &app, &info, kind, instanceID, string(details.RawParameters), mapparams)
+	err = broker.UpdateAppEnvironment(cfClient, &app, &info, details.ServiceID, instanceID, string(details.RawParameters), mapparams)
 	if err != nil {
 		return spec, err
 	}
@@ -62,7 +54,7 @@ func (broker *ConfigServerBroker) updateRegistryServerInstance(cxt context.Conte
 	broker.Logger.Info("handling node count")
 	// handle the node count
 	rc := &registryConfig{}
-	rp, err := extractRegistryParams(string(details.RawParameters))
+	rp, err := utilities.ExtractRegistryParams(string(details.RawParameters))
 	if err != nil {
 		return spec, err
 	}
@@ -84,7 +76,7 @@ func (broker *ConfigServerBroker) updateRegistryServerInstance(cxt context.Conte
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.updateAppEnvironment(cfClient, &app, &info, kind, instanceID, rc.String(), mapparams)
+	err = broker.UpdateAppEnvironment(cfClient, &app, &info, details.ServiceID, instanceID, rc.String(), mapparams)
 
 	if err != nil {
 		return spec, err

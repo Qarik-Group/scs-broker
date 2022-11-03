@@ -10,7 +10,7 @@ import (
 )
 
 // Updates the app enviornment variables for creating or updating an instance.
-func (broker *ConfigServerBroker) updateAppEnvironment(cfClient *ccv3.Client, app *ccv3.Application, info *ccv3.Info, kind string, instanceId string, jsonparams string, params map[string]string) error {
+func (broker *SCSBroker) UpdateAppEnvironment(cfClient *ccv3.Client, app *ccv3.Application, info *ccv3.Info, kind string, instanceId string, jsonparams string, params map[string]string) error {
 
 	var profiles []string
 	for key, value := range params {

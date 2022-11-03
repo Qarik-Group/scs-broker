@@ -2,11 +2,11 @@ package broker
 
 import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
-	"github.com/cloudfoundry-community/go-cf-clients-helper"
+	clients "github.com/cloudfoundry-community/go-cf-clients-helper"
 	"github.com/cloudfoundry-community/go-uaa"
 )
 
-func (broker *ConfigServerBroker) getClient() (*ccv3.Client, error) {
+func (broker *SCSBroker) GetClient() (*ccv3.Client, error) {
 
 	config := clients.Config{
 		Endpoint:          broker.Config.CfConfig.ApiUrl,
@@ -22,9 +22,9 @@ func (broker *ConfigServerBroker) getClient() (*ccv3.Client, error) {
 	return session.V3(), err
 }
 
-func (broker *ConfigServerBroker) getUaaClient() (*uaa.API, error) {
+func (broker *SCSBroker) GetUaaClient() (*uaa.API, error) {
 
-	cf, err := broker.getClient()
+	cf, err := broker.GetClient()
 	if err != nil {
 		return nil, err
 	}

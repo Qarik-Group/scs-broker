@@ -1,4 +1,4 @@
-package broker
+package utilities
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ var seededRand *rand.Rand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
 // Generate a random password.
-func genClientPassword() string {
+func GenClientPassword() string {
 	b := make([]byte, passwordLength)
 	for i := range b {
 		b[i] = charset[seededRand.Intn(len(charset))]
@@ -32,7 +32,7 @@ func genClientPassword() string {
 // Given a broker request details object, determine
 // which of the supported services the request is
 // about.
-func getKind(details interface{}) (string, error) {
+func GetKind(details interface{}) (string, error) {
 	// fun fact: this whole function is gross.
 	if d, ok := details.(brokerapi.ProvisionDetails); ok {
 		return d.ServiceID, nil
@@ -63,17 +63,17 @@ func getKind(details interface{}) (string, error) {
 
 // Generate a UAA client ID binding name based on the kind of
 // service in question and the binding's  ID.
-func makeClientIdForBinding(kind string, bindingId string) string {
-	return kind + "-binding-" + strings.Replace(bindingId, kind+"-", "", 1)
+func MakeClientIdForBinding(serviceId string, bindingId string) string {
+	return serviceId + "-binding-" + strings.Replace(bindingId, serviceId+"-", "", 1)
 }
 
 // Generate an app name based on the kind of service in question
 // and a service instance ID.
-func makeAppName(kind string, instanceId string) string {
-	return kind + "-" + instanceId
+func MakeAppName(serviceId string, instanceId string) string {
+	return serviceId + "-" + instanceId
 }
 
-func extractRegistryParams(details string) (map[string]interface{}, error) {
+func ExtractRegistryParams(details string) (map[string]interface{}, error) {
 	// decode the raw params
 	decoded := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(details), &decoded); err != nil {
@@ -81,7 +81,7 @@ func extractRegistryParams(details string) (map[string]interface{}, error) {
 	}
 
 	// get the registry-specific params that affect broker operations
-	rp := registryParams{}
+	rp := RegistryParams{}
 
 	rp.Merge("count", decoded)
 	rp.Merge("application-security-groups", decoded)
@@ -92,9 +92,9 @@ func extractRegistryParams(details string) (map[string]interface{}, error) {
 	return rp, nil
 }
 
-type registryParams map[string]interface{}
+type RegistryParams map[string]interface{}
 
-func (rp registryParams) Merge(key string, other map[string]interface{}) {
+func (rp RegistryParams) Merge(key string, other map[string]interface{}) {
 	if value, found := other[key]; found {
 		rp[key] = value
 	}
