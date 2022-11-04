@@ -47,8 +47,19 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	}
 
 	broker.Logger.Info("Updating application")
-	_, _, err = cfClient.UpdateApplication(app)
+	tmp := ccv3.Application{
+		GUID:                app.GUID,
+		StackName:           app.StackName,
+		LifecycleBuildpacks: app.LifecycleBuildpacks,
+		LifecycleType:       app.LifecycleType,
+		Metadata:            app.Metadata,
+		Name:                app.Name,
+		State:               app.State,
+	}
+
+	_, _, err = cfClient.UpdateApplication(tmp)
 	if err != nil {
+		broker.Logger.Info("UpdateApplication(app) failed")
 		return spec, err
 	}
 
