@@ -47,7 +47,7 @@ func (broker *SCSBroker) updateConfigServerInstance(cxt context.Context, instanc
 
 	//TODO: Test this in particular, as it does not work as expected in
 	//the equivalent workflow for service-registry.
-	_, _, err = cfClient.UpdateApplication(app)
+	_, _, err = cfClient.UpdateApplication(utilities.SafeApp(app))
 	if err != nil {
 		return spec, err
 	}
