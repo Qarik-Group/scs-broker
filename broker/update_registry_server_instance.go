@@ -84,9 +84,22 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 
 	// since this is an update, we need to scale, but only if the desired proc
 	// count has changed
-	procs, err := getApplicationProcessesByType(cfClient, app.GUID, "web")
+	procs, err := getApplicationProcessesByType(cfClient, broker.Logger, app.GUID, "web")
+	if err != nil {
+		return spec, err
+	}
 
-	if count != len(procs) {
+	procCount := 0
+	for _, proc := range procs {
+		if proc.Instances.IsSet {
+			procCount += proc.Instances.Value
+		}
+	}
+
+	broker.Logger.Info(fmt.Sprintf("I received %d procs from the API", procCount))
+
+	if count != procCount {
+		broker.Logger.Info(fmt.Sprintf("Scaling to %d procs", count))
 		err = broker.scaleRegistryServer(cfClient, &app, count, rc)
 		if err != nil {
 			return spec, err
@@ -108,7 +121,7 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	return spec, nil
 }
 
-func getApplicationProcessesByType(client *ccv3.Client, appGUID string, procType string) ([]ccv3.Process, error) {
+func getApplicationProcessesByType(client *ccv3.Client, logger lager.Logger, appGUID string, procType string) ([]ccv3.Process, error) {
 	filtered := make([]ccv3.Process, 0)
 
 	candidates, _, err := client.GetApplicationProcesses(appGUID)
@@ -116,7 +129,10 @@ func getApplicationProcessesByType(client *ccv3.Client, appGUID string, procType
 		return filtered, err
 	}
 
+	logger.Info(fmt.Sprintf("getApplicationProcessesByType got %d total procs", len(candidates)))
+
 	for _, prospect := range candidates {
+
 		if prospect.Type == procType {
 			filtered = append(filtered, prospect)
 		}
