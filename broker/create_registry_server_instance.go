@@ -150,7 +150,7 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	// handle the node count
 	if count > 1 {
 		rc.Clustered()
-		rc.AddPeer(fmt.Sprintf("https://%s/", route.URL))
+		rc.AddPeer(fmt.Sprintf("https://%s/eureka", route.URL))
 		broker.Logger.Info(fmt.Sprintf("scaling to %d", count))
 		err = broker.scaleRegistryServer(cfClient, &app, count, rc)
 		if err != nil {

@@ -77,7 +77,7 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 
 		route := routes[0]
 
-		rc.AddPeer(fmt.Sprintf("https://%s/", route.URL))
+		rc.AddPeer(fmt.Sprintf("https://%s/eureka", route.URL))
 	} else {
 		rc.Standalone()
 	}
