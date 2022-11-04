@@ -3,6 +3,7 @@ package broker
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/lager"
@@ -69,6 +70,14 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 
 	if count > 1 {
 		rc.Clustered()
+		routes, _, err := cfClient.GetApplicationRoutes(app.GUID)
+		if err != nil {
+			return spec, err
+		}
+
+		route := routes[0]
+
+		rc.AddPeer(fmt.Sprintf("%s/eureka", route.URL))
 	} else {
 		rc.Standalone()
 	}
