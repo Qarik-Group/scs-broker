@@ -22,6 +22,17 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	envsetup := scsccparser.EnvironmentSetup{}
 	cfClient, err := broker.GetClient()
 
+	rc := &registryConfig{}
+	rp, err := utilities.ExtractRegistryParams(string(details.RawParameters))
+	if err != nil {
+		return spec, err
+	}
+
+	count, err := rp.Count()
+	if err != nil {
+		return spec, err
+	}
+
 	if err != nil {
 		return spec, errors.New("Couldn't start session: " + err.Error())
 	}
@@ -57,17 +68,6 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 
 	broker.Logger.Info("handling node count")
 	// handle the node count
-	rc := &registryConfig{}
-	rp, err := utilities.ExtractRegistryParams(string(details.RawParameters))
-	if err != nil {
-		return spec, err
-	}
-
-	count, err := rp.Count()
-	if err != nil {
-		return spec, err
-	}
-
 	if count > 1 {
 		rc.Clustered()
 		routes, _, err := cfClient.GetApplicationRoutes(app.GUID)

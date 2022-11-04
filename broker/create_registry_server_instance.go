@@ -19,6 +19,18 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", err
 	}
 
+	rc := &registryConfig{}
+	broker.Logger.Info("jsonparams == " + jsonparams)
+	rp, err := utilities.ExtractRegistryParams(jsonparams)
+	if err != nil {
+		return "", err
+	}
+
+	count, err := rp.Count()
+	if err != nil {
+		return "", err
+	}
+
 	cfClient, err := broker.GetClient()
 	if err != nil {
 		return "", errors.New("Couldn't start session: " + err.Error())
@@ -136,18 +148,6 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 
 	broker.Logger.Info("handle node count")
 	// handle the node count
-	rc := &registryConfig{}
-	broker.Logger.Info("jsonparams == " + jsonparams)
-	rp, err := utilities.ExtractRegistryParams(jsonparams)
-	if err != nil {
-		return "", err
-	}
-
-	count, err := rp.Count()
-	if err != nil {
-		return "", err
-	}
-
 	if count > 1 {
 		rc.Clustered()
 		rc.AddPeer(fmt.Sprintf("%s/eureka", route.URL))
