@@ -165,14 +165,14 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		}
 
 		for _, stat := range stats {
-			rc.AddPeer(fmt.Sprintf("http://%s:%d", stat.Host, stat.InstancePorts[0].Internal))
+			rc.AddPeer(stat.Index, stat.Host, stat.InstancePorts[0].External)
 		}
 	} else {
 		rc.Standalone()
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.UpdateAppEnvironment(cfClient, &app, &info, serviceId, instanceId, rc.String(), params)
+	err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, serviceId, instanceId, rc, params)
 
 	if err != nil {
 		return "", err
