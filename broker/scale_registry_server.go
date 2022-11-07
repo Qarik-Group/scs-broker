@@ -13,7 +13,9 @@ func (broker *SCSBroker) scaleRegistryServer(cfClient *ccv3.Client, app *ccv3.Ap
 		//DiskInDB:   types.NullUint64{Value: 0, IsSet: false},
 	}
 
-	_, _, err := cfClient.CreateApplicationProcessScale(app.GUID, p)
+	tentative, _, err := cfClient.CreateApplicationProcessScale(app.GUID, p)
+
+	_, _, err = broker.pollScale(tentative, count)
 
 	return err
 }
