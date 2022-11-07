@@ -44,6 +44,8 @@ code.cloudfoundry.org/cli/version
 code.cloudfoundry.org/lager
 # code.cloudfoundry.org/tlsconfig v0.0.0-20200131000646-bbe0f8da39b3
 code.cloudfoundry.org/tlsconfig
+# github.com/Masterminds/semver v1.4.2
+github.com/Masterminds/semver
 # github.com/SermoDigital/jose v0.9.1 => github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2
 github.com/SermoDigital/jose
 github.com/SermoDigital/jose/crypto
@@ -60,6 +62,9 @@ github.com/charlievieth/fs
 # github.com/cloudfoundry-community/go-cf-clients-helper v1.0.1
 ## explicit
 github.com/cloudfoundry-community/go-cf-clients-helper
+# github.com/cloudfoundry-community/go-cfclient v0.0.0-20220930021109-9c4e6c59ccf1
+## explicit
+github.com/cloudfoundry-community/go-cfclient
 # github.com/cloudfoundry-community/go-uaa v0.3.1
 ## explicit
 github.com/cloudfoundry-community/go-uaa

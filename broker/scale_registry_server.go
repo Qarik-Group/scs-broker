@@ -5,7 +5,7 @@ import (
 	"code.cloudfoundry.org/cli/types"
 )
 
-func (broker *SCSBroker) scaleRegistryServer(cfClient *ccv3.Client, app *ccv3.Application, count int, rc *registryConfig) error {
+func (broker *SCSBroker) scaleRegistryServer(cfClient *ccv3.Client, app *ccv3.Application, count int) error {
 	p := ccv3.Process{
 		Type:       "web",
 		Instances:  types.NullInt{Value: count, IsSet: true},

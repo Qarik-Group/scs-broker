@@ -1,12 +1,10 @@
 package broker
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path"
-	"strings"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
@@ -19,7 +17,7 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", err
 	}
 
-	rc := &registryConfig{}
+	rc := utilities.NewRegistryConfig()
 	broker.Logger.Info("jsonparams == " + jsonparams)
 	rp, err := utilities.ExtractRegistryParams(jsonparams)
 	if err != nil {
@@ -150,11 +148,24 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	// handle the node count
 	if count > 1 {
 		rc.Clustered()
-		rc.AddPeer(fmt.Sprintf("https://%s/eureka", route.URL))
 		broker.Logger.Info(fmt.Sprintf("scaling to %d", count))
-		err = broker.scaleRegistryServer(cfClient, &app, count, rc)
+		err = broker.scaleRegistryServer(cfClient, &app, count)
 		if err != nil {
 			return "", err
+		}
+
+		community, err := broker.GetCommunity()
+		if err != nil {
+			return "", err
+		}
+
+		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+		if err != nil {
+			return "", nil
+		}
+
+		for _, stat := range stats {
+			rc.AddPeer(fmt.Sprintf("http://%s:%d", stat.Host, stat.InstancePorts[0].Internal))
 		}
 	} else {
 		rc.Standalone()
@@ -175,55 +186,4 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	broker.Logger.Info(route.URL)
 
 	return route.URL, nil
-}
-
-type registryConfig struct {
-	Mode  string
-	Peers []string
-}
-
-func (rc *registryConfig) AddPeer(peer string) {
-	rc.Peers = append(rc.Peers, peer)
-}
-
-func (rc *registryConfig) Standalone() {
-	rc.Mode = "standalone"
-}
-
-func (rc *registryConfig) Clustered() {
-	rc.Mode = "clustered"
-}
-
-func (rc *registryConfig) String() string {
-	return string(rc.Bytes())
-}
-
-func (rc *registryConfig) Bytes() []byte {
-	client := make(map[string]interface{})
-
-	if rc.Mode == "standalone" {
-		client["registerWithEureka"] = false
-		client["fetchRegistry"] = false
-	}
-
-	if len(rc.Peers) > 0 {
-		serviceUrl := make(map[string]interface{})
-		defaultZone := strings.Join(rc.Peers, ",")
-		serviceUrl["defaultZone"] = defaultZone
-		client["serviceUrl"] = serviceUrl
-	}
-
-	eureka := make(map[string]interface{})
-	eureka["client"] = client
-
-	data := make(map[string]interface{})
-	data["eureka"] = eureka
-
-	output, err := json.Marshal(data)
-	if err != nil {
-		return []byte("{}")
-	}
-
-	return output
-
 }

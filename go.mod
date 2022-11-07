@@ -16,6 +16,7 @@ require (
 	code.cloudfoundry.org/cli v6.51.0+incompatible
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	github.com/cloudfoundry-community/go-cf-clients-helper v1.0.1
+	github.com/cloudfoundry-community/go-cfclient v0.0.0-20220930021109-9c4e6c59ccf1
 	github.com/cloudfoundry-community/go-uaa v0.3.1
 	github.com/drewolson/testflight v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

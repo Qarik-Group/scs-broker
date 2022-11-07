@@ -21,8 +21,16 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	broker.Logger.Info("update-service-instance", lager.Data{"plan-id": details.PlanID, "service-id": details.ServiceID})
 	envsetup := scsccparser.EnvironmentSetup{}
 	cfClient, err := broker.GetClient()
+	if err != nil {
+		return spec, errors.New("Couldn't start session: " + err.Error())
+	}
 
-	rc := &registryConfig{}
+	community, err := broker.GetCommunity()
+	if err != nil {
+		return spec, err
+	}
+
+	rc := utilities.NewRegistryConfig()
 	rp, err := utilities.ExtractRegistryParams(string(details.RawParameters))
 	if err != nil {
 		return spec, err
@@ -31,10 +39,6 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	count, err := rp.Count()
 	if err != nil {
 		return spec, err
-	}
-
-	if err != nil {
-		return spec, errors.New("Couldn't start session: " + err.Error())
 	}
 
 	info, _, _, err := cfClient.GetInfo()
@@ -70,14 +74,6 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	// handle the node count
 	if count > 1 {
 		rc.Clustered()
-		routes, _, err := cfClient.GetApplicationRoutes(app.GUID)
-		if err != nil {
-			return spec, err
-		}
-
-		route := routes[0]
-
-		rc.AddPeer(fmt.Sprintf("https://%s/eureka", route.URL))
 	} else {
 		rc.Standalone()
 	}
@@ -100,9 +96,20 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 
 	if count != procCount {
 		broker.Logger.Info(fmt.Sprintf("Scaling to %d procs", count))
-		err = broker.scaleRegistryServer(cfClient, &app, count, rc)
+		err = broker.scaleRegistryServer(cfClient, &app, count)
 		if err != nil {
 			return spec, err
+		}
+	}
+
+	if count > 1 {
+		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+		if err != nil {
+			return spec, err
+		}
+
+		for _, stat := range stats {
+			rc.AddPeer(fmt.Sprintf("http://%s:%d", stat.Host, stat.InstancePorts[0].Internal))
 		}
 	}
 
