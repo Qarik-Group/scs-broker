@@ -19,8 +19,8 @@ type RegistryConfig struct {
 	Peers []*RegistryPeer
 }
 
-func (rc *RegistryConfig) AddPeer(idx int, host string, port int) {
-	rc.Peers = append(rc.Peers, &RegistryPeer{Index: idx, Host: host, Port: port})
+func (rc *RegistryConfig) AddPeer(idx int, scheme string, host string, port int) {
+	rc.Peers = append(rc.Peers, &RegistryPeer{Index: idx, Scheme: scheme, Host: host, Port: port})
 }
 
 func (rc *RegistryConfig) Standalone() {

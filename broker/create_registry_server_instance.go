@@ -165,7 +165,7 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		}
 
 		for _, stat := range stats {
-			rc.AddPeer(stat.Index, stat.Host, stat.InstancePorts[0].External)
+			rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
 		}
 	} else {
 		rc.Standalone()
