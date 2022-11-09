@@ -131,19 +131,6 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", errors.New("no domains found for this instance")
 	}
 
-	route, _, err := cfClient.CreateRoute(ccv3.Route{
-		SpaceGUID:  spaceGUID,
-		DomainGUID: domains[0].GUID,
-		Host:       appName,
-	})
-	if err != nil {
-		return "", err
-	}
-	_, err = cfClient.MapRoute(route.GUID, app.GUID)
-	if err != nil {
-		return "", err
-	}
-
 	broker.Logger.Info("handle node count")
 	// handle the node count
 	if count > 1 {
@@ -174,6 +161,20 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	broker.Logger.Info("Updating Environment")
 	err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, serviceId, instanceId, rc, params)
 
+	if err != nil {
+		return "", err
+	}
+
+	route, _, err := cfClient.CreateRoute(ccv3.Route{
+		SpaceGUID:  spaceGUID,
+		DomainGUID: domains[0].GUID,
+		Host:       appName,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	_, err = cfClient.MapRoute(route.GUID, app.GUID)
 	if err != nil {
 		return "", err
 	}
