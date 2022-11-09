@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/lager"
-	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	brokerapi "github.com/pivotal-cf/brokerapi/v7/domain"
 	"github.com/starkandwayne/scs-broker/broker/utilities"
 	scsccparser "github.com/starkandwayne/spring-cloud-services-cli-config-parser"
 )

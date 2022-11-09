@@ -3,15 +3,18 @@ package broker
 import (
 	"errors"
 
-	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
-	"code.cloudfoundry.org/lager"
 	cf "github.com/cloudfoundry-community/go-cfclient"
 )
 
-func getProcessStatsByAppAndType(cfClient *ccv3.Client, community *cf.Client, logger lager.Logger, appGUID string, procType string) ([]cf.Stats, error) {
+func (broker *SCSBroker) getProcessStatsByAppAndType(appGUID string, procType string) ([]cf.Stats, error) {
 	stats := make([]cf.Stats, 0)
 
-	procs, err := getApplicationProcessesByType(cfClient, logger, appGUID, procType)
+	community, err := broker.GetCommunity()
+	if err != nil {
+		return stats, err
+	}
+
+	procs, err := broker.getApplicationProcessesByType(appGUID, procType)
 	if err != nil {
 		return stats, err
 	}

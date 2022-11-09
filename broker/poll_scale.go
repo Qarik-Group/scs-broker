@@ -19,7 +19,7 @@ func (broker *SCSBroker) pollScale(proc ccv3.Process, desired int) (ccv3.Process
 	done := false
 
 	for !done {
-		time.Sleep(1000000000)
+		time.Sleep(1 * time.Second)
 		ready := 0
 		broker.Logger.Info("polling process instance states", lager.Data{
 			"process_guid": proc.GUID,

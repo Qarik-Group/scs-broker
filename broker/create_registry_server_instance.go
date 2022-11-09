@@ -17,17 +17,17 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", err
 	}
 
-	rc := utilities.NewRegistryConfig()
+	//rc := utilities.NewRegistryConfig()
 	broker.Logger.Info("jsonparams == " + jsonparams)
-	rp, err := utilities.ExtractRegistryParams(jsonparams)
-	if err != nil {
-		return "", err
-	}
+	//rp, err := utilities.ExtractRegistryParams(jsonparams)
+	//if err != nil {
+	//return "", err
+	//}
 
-	count, err := rp.Count()
-	if err != nil {
-		return "", err
-	}
+	//count, err := rp.Count()
+	//if err != nil {
+	//return "", err
+	//}
 
 	cfClient, err := broker.GetClient()
 	if err != nil {
@@ -144,39 +144,39 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", err
 	}
 
-	broker.Logger.Info("handle node count")
-	// handle the node count
-	if count > 1 {
-		rc.Clustered()
-		broker.Logger.Info(fmt.Sprintf("scaling to %d", count))
-		err = broker.scaleRegistryServer(cfClient, &app, count)
-		if err != nil {
-			return "", err
-		}
+	//broker.Logger.Info("handle node count")
+	//// handle the node count
+	//if count > 1 {
+	//rc.Clustered()
+	//broker.Logger.Info(fmt.Sprintf("scaling to %d", count))
+	//err = broker.scaleRegistryServer(cfClient, &app, count)
+	//if err != nil {
+	//return "", err
+	//}
 
-		community, err := broker.GetCommunity()
-		if err != nil {
-			return "", err
-		}
+	//community, err := broker.GetCommunity()
+	//if err != nil {
+	//return "", err
+	//}
 
-		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
-		if err != nil {
-			return "", nil
-		}
+	//stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+	//if err != nil {
+	//return "", nil
+	//}
 
-		for _, stat := range stats {
-			rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
-		}
-	} else {
-		rc.Standalone()
-	}
+	//for _, stat := range stats {
+	//rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
+	//}
+	//} else {
+	//rc.Standalone()
+	//}
 
-	broker.Logger.Info("Updating Environment")
-	err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, serviceId, instanceId, rc, params)
+	//broker.Logger.Info("Updating Environment")
+	//err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, serviceId, instanceId, rc, params)
 
-	if err != nil {
-		return "", err
-	}
+	//if err != nil {
+	//return "", err
+	//}
 
 	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
 	if err != nil {

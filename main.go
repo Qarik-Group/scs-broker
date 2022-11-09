@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/pivotal-cf/brokerapi"
+	"github.com/pivotal-cf/brokerapi/v7"
 	"github.com/starkandwayne/scs-broker/broker"
 	"github.com/starkandwayne/scs-broker/config"
 	"github.com/starkandwayne/scs-broker/httpartifacttransport"

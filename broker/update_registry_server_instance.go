@@ -7,7 +7,7 @@ import (
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/lager"
-	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	brokerapi "github.com/pivotal-cf/brokerapi/v7/domain"
 	"github.com/starkandwayne/scs-broker/broker/utilities"
 	scsccparser "github.com/starkandwayne/spring-cloud-services-cli-config-parser"
 )
@@ -23,11 +23,6 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	cfClient, err := broker.GetClient()
 	if err != nil {
 		return spec, errors.New("Couldn't start session: " + err.Error())
-	}
-
-	community, err := broker.GetCommunity()
-	if err != nil {
-		return spec, err
 	}
 
 	rc := utilities.NewRegistryConfig()
@@ -70,6 +65,11 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		return spec, err
 	}
 
+	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	if err != nil {
+		return spec, err
+	}
+
 	broker.Logger.Info("handling node count")
 	// handle the node count
 	if count > 1 {
@@ -80,7 +80,7 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 
 	// since this is an update, we need to scale, but only if the desired proc
 	// count has changed
-	procs, err := getApplicationProcessesByType(cfClient, broker.Logger, app.GUID, "web")
+	procs, err := broker.getApplicationProcessesByType(app.GUID, "web")
 	if err != nil {
 		return spec, err
 	}
@@ -103,7 +103,7 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	}
 
 	if count > 1 {
-		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+		stats, err := broker.getProcessStatsByAppAndType(app.GUID, "web")
 		if err != nil {
 			return spec, err
 		}
@@ -114,13 +114,8 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, details.ServiceID, instanceID, rc, mapparams)
+	err = broker.UpdateRegistryEnvironment(&app, "", rc)
 
-	if err != nil {
-		return spec, err
-	}
-
-	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
 	if err != nil {
 		return spec, err
 	}
@@ -128,15 +123,20 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	return spec, nil
 }
 
-func getApplicationProcessesByType(client *ccv3.Client, logger lager.Logger, appGUID string, procType string) ([]ccv3.Process, error) {
+func (broker *SCSBroker) getApplicationProcessesByType(appGUID string, procType string) ([]ccv3.Process, error) {
 	filtered := make([]ccv3.Process, 0)
+
+	client, err := broker.GetClient()
+	if err != nil {
+		return filtered, err
+	}
 
 	candidates, _, err := client.GetApplicationProcesses(appGUID)
 	if err != nil {
 		return filtered, err
 	}
 
-	logger.Info(fmt.Sprintf("getApplicationProcessesByType got %d total procs", len(candidates)))
+	broker.Logger.Info(fmt.Sprintf("getApplicationProcessesByType got %d total procs", len(candidates)))
 
 	for _, prospect := range candidates {
 

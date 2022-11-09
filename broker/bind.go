@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cloudfoundry-community/go-uaa"
-	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	brokerapi "github.com/pivotal-cf/brokerapi/v7/domain"
 	"github.com/starkandwayne/scs-broker/broker/utilities"
 )
 
