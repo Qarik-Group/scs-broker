@@ -180,9 +180,12 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", err
 	}
 
-	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	app, _, err = cfClient.UpdateApplicationStart(app.GUID)
 	if err != nil {
-		return "", err
+		app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	broker.Logger.Info(route.URL)
