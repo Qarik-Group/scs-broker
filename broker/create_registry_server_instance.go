@@ -175,6 +175,7 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	}
 
 	_, err = cfClient.MapRoute(route.GUID, app.GUID)
+
 	if err != nil {
 		return "", err
 	}
