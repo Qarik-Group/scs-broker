@@ -142,9 +142,6 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		DomainGUID: domains[0].GUID,
 		Host:       appName,
 	})
-	if err != nil {
-		return spec, err
-	}
 
 	_, err = cfClient.MapRoute(route.GUID, app.GUID)
 
