@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
@@ -136,6 +137,7 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	if err != nil {
 		return spec, err
 	}
+	x := 0
 	for _, peer := range rc.Peers {
 		req, err := http.NewRequest(http.MethodPost, "https://"+route[0].URL+"/cf-config/peers", bytes.NewBuffer(peers))
 		if err != nil {
@@ -143,7 +145,7 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+string(peer.Index))
+		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
 
 		client := http.Client{
 			Timeout: 30 * time.Second,
@@ -154,6 +156,7 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 			fmt.Printf("client: error making http request: %s\n", err)
 		}
 		broker.Logger.Info(res.Status)
+		x++
 	}
 
 	return spec, nil
