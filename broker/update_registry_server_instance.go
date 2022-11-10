@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/lager"
@@ -139,12 +140,46 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		}
 	}
 
+	domains, _, err := cfClient.GetDomains(
+		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},
+	)
+	if err != nil {
+		return spec, err
+	}
+
+	route, _, err := cfClient.CreateRoute(ccv3.Route{
+		SpaceGUID:  spaceGUID,
+		DomainGUID: domains[0].GUID,
+		Host:       appName,
+	})
+	if err != nil {
+		return spec, err
+	}
+
+	_, err = cfClient.MapRoute(route.GUID, app.GUID)
+
 	peers, err := json.Marshal(rc.Peers)
 	if err != nil {
 		return spec, err
 	}
 	for _, peer := range rc.Peers {
-		http.Post("http://"+peer.Host+":"+string(peer.Port)+"/cf-config/peers", "application/json", bytes.NewBuffer(peers))
+		req, err := http.NewRequest(http.MethodPost, "https://"+route.URL+"/cf-config/peers", bytes.NewBuffer(peers))
+		if err != nil {
+			fmt.Printf("client: could not create request: %s\n", err)
+
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+string(peer.Index))
+
+		client := http.Client{
+			Timeout: 30 * time.Second,
+		}
+
+		res, err := client.Do(req)
+		if err != nil {
+			fmt.Printf("client: error making http request: %s\n", err)
+		}
+		broker.Logger.Info(res.Status)
 	}
 
 	return spec, nil
