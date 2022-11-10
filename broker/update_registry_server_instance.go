@@ -124,21 +124,11 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		return spec, err
 	}
 
-	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
-	if err != nil {
-		return spec, err
-	}
-
-	if count > 1 {
-		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+	/*
+		app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
 		if err != nil {
 			return spec, err
-		}
-
-		for _, stat := range stats {
-			rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
-		}
-	}
+		}*/
 
 	domains, _, err := cfClient.GetDomains(
 		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},
