@@ -1,5 +1,11 @@
 package utilities
 
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
 func NewRegistryConfig() *RegistryConfig {
 	rc := &RegistryConfig{}
 	rc.Standalone()
@@ -8,10 +14,14 @@ func NewRegistryConfig() *RegistryConfig {
 }
 
 type RegistryPeer struct {
-	Index  int    `json:"index"`
+	//Index  int    `json:"index"`
 	Scheme string `json:"scheme"`
 	Host   string `json:"host"`
-	Port   int    `json:"port"`
+	//Port   int    `json:"port"`
+}
+
+func (peer *RegistryPeer) String() string {
+	return fmt.Sprintf("%s://%s", peer.Scheme, peer.Host)
 }
 
 type RegistryConfig struct {
@@ -19,8 +29,8 @@ type RegistryConfig struct {
 	Peers []*RegistryPeer
 }
 
-func (rc *RegistryConfig) AddPeer(idx int, scheme string, host string, port int) {
-	rc.Peers = append(rc.Peers, &RegistryPeer{Index: idx, Scheme: scheme, Host: host, Port: port})
+func (rc *RegistryConfig) AddPeer(scheme string, host string) {
+	rc.Peers = append(rc.Peers, &RegistryPeer{Scheme: scheme, Host: host})
 }
 
 func (rc *RegistryConfig) Standalone() {
@@ -31,35 +41,38 @@ func (rc *RegistryConfig) Clustered() {
 	rc.Mode = "clustered"
 }
 
-//func (rc *RegistryConfig) String() string {
-//return string(rc.Bytes())
-//}
+func (rc *RegistryConfig) ForNode(node string) string {
+	client := make(map[string]interface{})
+	m := rc.Mode == "clustered"
 
-//func (rc *RegistryConfig) Bytes() []byte {
-//client := make(map[string]interface{})
-//m := rc.Mode == "clustered"
+	client["registerWithEureka"] = m
+	client["fetchRegistry"] = m
 
-//client["registerWithEureka"] = m
-//client["fetchRegistry"] = m
+	if m {
+		peers := make([]string, 0)
+		for _, peer := range rc.Peers {
+			if peer.Host != node {
+				peers = append(peers, peer.String())
+			}
+		}
 
-//if len(rc.Peers) > 0 {
-//serviceUrl := make(map[string]interface{})
-//defaultZone := strings.Join(rc.Peers, ",")
-//serviceUrl["defaultZone"] = defaultZone
-//client["serviceUrl"] = serviceUrl
-//}
+		serviceUrl := make(map[string]interface{})
+		defaultZone := strings.Join(peers, ",")
+		serviceUrl["defaultZone"] = defaultZone
+		client["serviceUrl"] = serviceUrl
+	}
 
-//eureka := make(map[string]interface{})
-//eureka["client"] = client
+	eureka := make(map[string]interface{})
+	eureka["client"] = client
 
-//data := make(map[string]interface{})
-//data["eureka"] = eureka
+	data := make(map[string]interface{})
+	data["eureka"] = eureka
 
-//output, err := json.Marshal(data)
-//if err != nil {
-//return []byte("{}")
-//}
+	output, err := json.Marshal(data)
+	if err != nil {
+		return "{}"
+	}
 
-//return output
+	return string(output)
 
-//}
+}

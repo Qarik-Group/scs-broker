@@ -84,23 +84,24 @@ github.com/cloudfoundry/noaa/errors
 github.com/cloudfoundry/sonde-go/events
 # github.com/cppforlife/go-patch v0.2.0
 github.com/cppforlife/go-patch/patch
-# github.com/drewolson/testflight v1.0.0
-## explicit
 # github.com/ess/debuggable v1.0.0
 github.com/ess/debuggable
 # github.com/ess/hype v1.1.5
 ## explicit
 github.com/ess/hype
+# github.com/gammazero/deque v0.1.0
+github.com/gammazero/deque
+# github.com/gammazero/workerpool v1.1.2
+## explicit
+github.com/gammazero/workerpool
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/golang/protobuf v1.5.2
-## explicit
 github.com/golang/protobuf/proto
-# github.com/google/go-cmp v0.5.8
-## explicit
 # github.com/google/uuid v1.1.0
+## explicit
 github.com/google/uuid
 # github.com/gorilla/mux v1.8.0
 github.com/gorilla/mux
@@ -120,8 +121,6 @@ github.com/mattn/go-runewidth
 # github.com/pborman/uuid v1.2.0
 ## explicit
 github.com/pborman/uuid
-# github.com/pivotal-cf/brokerapi v6.4.2+incompatible
-## explicit
 # github.com/pivotal-cf/brokerapi/v7 v7.4.0
 ## explicit
 github.com/pivotal-cf/brokerapi/v7
@@ -146,7 +145,6 @@ github.com/tedsuo/rata
 ## explicit
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
-## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 # golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
@@ -169,7 +167,6 @@ google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
 # google.golang.org/protobuf v1.28.0
-## explicit
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt

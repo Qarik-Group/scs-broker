@@ -26,16 +26,22 @@ func (broker *SCSBroker) UpdateRegistryEnvironment(app *ccv3.Application, url st
 		return err
 	}
 
+	broker.Logger.Info("update registry environment got these peers: " + string(peers))
+
 	beast, err := hype.New(fmt.Sprintf("https://%s", routes[0].URL))
 	if err != nil {
 		return err
 	}
 
-	for _, peer := range rc.Peers {
+	broker.Logger.Info("setting the fucking peers")
+
+	for _, _ = range rc.Peers {
 		resp := beast.
 			WithoutTLSVerification().
-			Post("cf-config-peers", nil, peers).
-			WithHeader(hype.NewHeader("X-Cf-App-Instance", fmt.Sprintf("%s:%d", app.GUID, peer.Index))).
+			Post("cf-config/peers", nil, peers).
+			WithHeader(hype.NewHeader("Accept", "application/json")).
+			WithHeader(hype.NewHeader("Content-Type", "application/json")).
+			//WithHeader(hype.NewHeader("X-Cf-App-Instance", fmt.Sprintf("%s:%d", app.GUID, peer.Index))).
 			Response()
 
 		if !resp.Okay() {

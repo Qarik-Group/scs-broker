@@ -15,7 +15,6 @@ var brokerLogger lager.Logger
 var httpTransport httpartifacttransport.HttpArtifactTransport
 
 func main() {
-
 	brokerLogger = lager.NewLogger("scs-broker")
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
