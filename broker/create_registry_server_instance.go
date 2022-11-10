@@ -135,6 +135,17 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", errors.New("no domains found for this instance")
 	}
 
+	broker.Logger.Info("Starting Application")
+	app, _, err = cfClient.UpdateApplicationStart(app.GUID)
+	if err != nil {
+		broker.Logger.Info("Application Start Failed, Trying restart")
+		app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+		if err != nil {
+			broker.Logger.Info("Application Start failed")
+			return "", err
+		}
+	}
+
 	broker.Logger.Info("handle node count")
 	// handle the node count
 	if count > 1 {
@@ -184,10 +195,13 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", err
 	}
 
+	broker.Logger.Info("Starting Application")
 	app, _, err = cfClient.UpdateApplicationStart(app.GUID)
 	if err != nil {
+		broker.Logger.Info("Application Start Failed, Trying restart")
 		app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
 		if err != nil {
+			broker.Logger.Info("Application Start failed")
 			return "", err
 		}
 	}
@@ -228,6 +242,8 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		if err != nil {
 			fmt.Printf("client: error making http request: %s\n", err)
 		}
+		broker.Logger.Info(res.Request.RequestURI)
+		broker.Logger.Info(string(peers))
 		broker.Logger.Info(res.Status)
 	}
 

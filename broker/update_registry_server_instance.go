@@ -155,6 +155,8 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		if err != nil {
 			fmt.Printf("client: error making http request: %s\n", err)
 		}
+		broker.Logger.Info(res.Request.RequestURI)
+		broker.Logger.Info(string(peers))
 		broker.Logger.Info(res.Status)
 		x++
 	}
