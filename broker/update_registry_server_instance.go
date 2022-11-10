@@ -1,9 +1,12 @@
 package broker
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/lager"
@@ -120,9 +123,28 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		return spec, err
 	}
 
-	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
 	if err != nil {
 		return spec, err
+	}
+
+	if count > 1 {
+		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+		if err != nil {
+			return spec, err
+		}
+
+		for _, stat := range stats {
+			rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
+		}
+	}
+
+	peers, err := json.Marshal(rc.Peers)
+	if err != nil {
+		return spec, err
+	}
+	for _, peer := range rc.Peers {
+		http.Post("http://"+peer.Host+":"+string(peer.Port)+"/cf-config/peers", "application/json", bytes.NewBuffer(peers))
 	}
 
 	return spec, nil

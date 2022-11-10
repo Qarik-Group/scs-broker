@@ -1,8 +1,11 @@
 package broker
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
 
@@ -186,6 +189,30 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		if err != nil {
 			return "", err
 		}
+	}
+
+	community, err := broker.GetCommunity()
+	if err != nil {
+		return "", err
+	}
+
+	if count > 1 {
+		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+		if err != nil {
+			return "", err
+		}
+
+		for _, stat := range stats {
+			rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
+		}
+	}
+
+	peers, err := json.Marshal(rc.Peers)
+	if err != nil {
+		return "", err
+	}
+	for _, peer := range rc.Peers {
+		http.Post("http://"+peer.Host+":"+string(peer.Port)+"/cf-config/peers", "application/json", bytes.NewBuffer(peers))
 	}
 
 	broker.Logger.Info(route.URL)
