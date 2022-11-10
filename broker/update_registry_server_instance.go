@@ -130,27 +130,14 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 			return spec, err
 		}*/
 
-	domains, _, err := cfClient.GetDomains(
-		ccv3.Query{Key: ccv3.NameFilter, Values: []string{broker.Config.InstanceDomain}},
-	)
-	if err != nil {
-		return spec, err
-	}
-
-	route, _, err := cfClient.CreateRoute(ccv3.Route{
-		SpaceGUID:  spaceGUID,
-		DomainGUID: domains[0].GUID,
-		Host:       appName,
-	})
-
-	_, err = cfClient.MapRoute(route.GUID, app.GUID)
+	route, _, err := cfClient.GetApplicationRoutes(app.GUID)
 
 	peers, err := json.Marshal(rc.Peers)
 	if err != nil {
 		return spec, err
 	}
 	for _, peer := range rc.Peers {
-		req, err := http.NewRequest(http.MethodPost, "https://"+route.URL+"/cf-config/peers", bytes.NewBuffer(peers))
+		req, err := http.NewRequest(http.MethodPost, "https://"+route[0].URL+"/cf-config/peers", bytes.NewBuffer(peers))
 		if err != nil {
 			fmt.Printf("client: could not create request: %s\n", err)
 
