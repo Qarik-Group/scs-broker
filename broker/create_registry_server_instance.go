@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
@@ -226,13 +227,15 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	if err != nil {
 		return "", err
 	}
+	x := 0
 	for _, peer := range rc.Peers {
 		req, err := http.NewRequest(http.MethodPost, "https://"+route.URL+"/cf-config/peers", bytes.NewBuffer(peers))
 		if err != nil {
 			fmt.Printf("client: could not create request: %s\n", err)
+
 		}
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+string(peer.Index))
+		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
 
 		client := http.Client{
 			Timeout: 30 * time.Second,
@@ -245,6 +248,7 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		broker.Logger.Info(res.Request.RequestURI)
 		broker.Logger.Info(string(peers))
 		broker.Logger.Info(res.Status)
+		x++
 	}
 
 	broker.Logger.Info(route.URL)
