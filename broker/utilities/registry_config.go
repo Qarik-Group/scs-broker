@@ -8,10 +8,10 @@ func NewRegistryConfig() *RegistryConfig {
 }
 
 type RegistryPeer struct {
-	Index  int    `json:"index"`
-	Scheme string `json:"scheme"`
-	Host   string `json:"host"`
-	Port   int    `json:"port"`
+	Index             int    `json:"index"`
+	Count             int    `json:"nodeCount"`
+	URI               string `json:"uri"`
+	ServiceInstanceId string `json:"service-instance-id"`
 }
 
 type RegistryConfig struct {
@@ -19,8 +19,8 @@ type RegistryConfig struct {
 	Peers []*RegistryPeer
 }
 
-func (rc *RegistryConfig) AddPeer(idx int, scheme string, host string, port int) {
-	rc.Peers = append(rc.Peers, &RegistryPeer{Index: idx, Scheme: scheme, Host: host, Port: port})
+func (rc *RegistryConfig) AddPeer(idx int, uri string, serviceinstanceID string) {
+	rc.Peers = append(rc.Peers, &RegistryPeer{Index: idx, Count: idx, URI: uri, ServiceInstanceId: serviceinstanceID})
 }
 
 func (rc *RegistryConfig) Standalone() {

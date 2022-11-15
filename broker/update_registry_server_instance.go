@@ -114,7 +114,7 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		}
 
 		for _, stat := range stats {
-			rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
+			rc.AddPeer(stat.Index, fmt.Sprintf("http://%s:%d/eureka", stat.Host, stat.InstancePorts[0].External), details.ServiceID)
 		}
 	}
 
