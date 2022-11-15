@@ -9,13 +9,15 @@
   instance_domain: (( param "Please override instance_domain" ))
   artifacts_directory: "/app/artifacts"
   services:
-    - service_name: config-server
+    configserver:
+      service_name: config-server
       service_id: config-server
       service_plan_id: default
       service_plan_name: default
       service_description: Broker to create config-servers
       service_download_uri: (( param "Please override config_server_download_uri" ))
-    - service_name: service-registry
+    serviceregistry:
+      service_name: service-registry
       service_id: service-registry
       service_plan_id: default
       service_plan_name: default
