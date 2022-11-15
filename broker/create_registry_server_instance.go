@@ -168,6 +168,7 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		}
 
 		for _, stat := range stats {
+
 			rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
 		}
 	} else {
@@ -229,13 +230,21 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	}
 	x := 0
 	for _, peer := range rc.Peers {
-		req, err := http.NewRequest(http.MethodPost, "https://"+route.URL+"/cf-config/peers", bytes.NewBuffer(peers))
+		req, err := http.NewRequest(http.MethodPost, "https://"+route.URL+"/config/peers", bytes.NewBuffer(peers))
 		if err != nil {
 			fmt.Printf("client: could not create request: %s\n", err)
 
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
+
+		refreshreq, err := http.NewRequest(http.MethodPost, "https://"+route.URL+"/actuator/refresh", nil)
+		if err != nil {
+			fmt.Printf("client: could not create request: %s\n", err)
+
+		}
+		refreshreq.Header.Set("Content-Type", "application/json")
+		refreshreq.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
 
 		client := http.Client{
 			Timeout: 30 * time.Second,
@@ -248,6 +257,14 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		broker.Logger.Info(res.Request.RequestURI)
 		broker.Logger.Info(string(peers))
 		broker.Logger.Info(res.Status)
+
+		refreshres, err := client.Do(refreshreq)
+		if err != nil {
+			fmt.Printf("client: error making http request: %s\n", err)
+		}
+		broker.Logger.Info(refreshres.Request.RequestURI)
+		broker.Logger.Info(string(peers))
+		broker.Logger.Info(refreshres.Status)
 		x++
 	}
 

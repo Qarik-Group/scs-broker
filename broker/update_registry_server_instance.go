@@ -125,11 +125,10 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		return spec, err
 	}
 
-	/*
-		app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
-		if err != nil {
-			return spec, err
-		}*/
+	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	if err != nil {
+		return spec, err
+	}
 
 	route, _, err := cfClient.GetApplicationRoutes(app.GUID)
 
@@ -139,13 +138,21 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	}
 	x := 0
 	for _, peer := range rc.Peers {
-		req, err := http.NewRequest(http.MethodPost, "https://"+route[0].URL+"/cf-config/peers", bytes.NewBuffer(peers))
+		req, err := http.NewRequest(http.MethodPost, "https://"+route[0].URL+"/config/peers", bytes.NewBuffer(peers))
 		if err != nil {
 			fmt.Printf("client: could not create request: %s\n", err)
 
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
+
+		refreshreq, err := http.NewRequest(http.MethodPost, "https://"+route[0].URL+"/actuator/refresh", nil)
+		if err != nil {
+			fmt.Printf("client: could not create request: %s\n", err)
+
+		}
+		refreshreq.Header.Set("Content-Type", "application/json")
+		refreshreq.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
 
 		client := http.Client{
 			Timeout: 30 * time.Second,
@@ -158,6 +165,14 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 		broker.Logger.Info(res.Request.RequestURI)
 		broker.Logger.Info(string(peers))
 		broker.Logger.Info(res.Status)
+
+		refreshres, err := client.Do(refreshreq)
+		if err != nil {
+			fmt.Printf("client: error making http request: %s\n", err)
+		}
+		broker.Logger.Info(refreshres.Request.RequestURI)
+		broker.Logger.Info(string(peers))
+		broker.Logger.Info(refreshres.Status)
 		x++
 	}
 
