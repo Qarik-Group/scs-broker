@@ -39,6 +39,7 @@ $cf create-service config-server default test-service -c "whatever json configur
 
 ## History ##
 
+* v1.0.0 - Full release with support for SR Actuators
 * v0.0.5 - Services as configurable objects
 * v0.0.4 - Now with configurable package names
 * v0.0.3 - Now without package fetching

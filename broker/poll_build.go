@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
 	"code.cloudfoundry.org/cli/util/configv3"
+	"code.cloudfoundry.org/lager"
 )
 
 func (broker *SCSBroker) pollBuild(buildGUID string, appName string) (ccv3.Droplet, ccv3.Warnings, error) {
@@ -28,6 +29,11 @@ func (broker *SCSBroker) pollBuild(buildGUID string, appName string) (ccv3.Dropl
 			if err != nil {
 				return ccv3.Droplet{}, allWarnings, err
 			}
+
+			broker.Logger.Info("polling build final state:", lager.Data{
+				"package_guid": build.GUID,
+				"state":        build.State,
+			})
 
 			switch build.State {
 			case constant.BuildFailed:

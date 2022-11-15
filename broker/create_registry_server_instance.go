@@ -1,12 +1,15 @@
 package broker
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path"
-	"strings"
+	"strconv"
+	"time"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
@@ -15,6 +18,18 @@ import (
 
 func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instanceId string, jsonparams string, params map[string]string) (string, error) {
 	service, err := broker.GetServiceByServiceID(serviceId)
+	if err != nil {
+		return "", err
+	}
+
+	rc := utilities.NewRegistryConfig()
+	broker.Logger.Info("jsonparams == " + jsonparams)
+	rp, err := utilities.ExtractRegistryParams(jsonparams)
+	if err != nil {
+		return "", err
+	}
+
+	count, err := rp.Count()
 	if err != nil {
 		return "", err
 	}
@@ -121,6 +136,52 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", errors.New("no domains found for this instance")
 	}
 
+	broker.Logger.Info("Starting Application")
+	app, _, err = cfClient.UpdateApplicationStart(app.GUID)
+	if err != nil {
+		broker.Logger.Info("Application Start Failed, Trying restart")
+		app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+		if err != nil {
+			broker.Logger.Info("Application Start failed")
+			return "", err
+		}
+	}
+
+	broker.Logger.Info("handle node count")
+	// handle the node count
+	if count > 1 {
+		rc.Clustered()
+		broker.Logger.Info(fmt.Sprintf("scaling to %d", count))
+		err = broker.scaleRegistryServer(cfClient, &app, count)
+		if err != nil {
+			return "", err
+		}
+
+		community, err := broker.GetCommunity()
+		if err != nil {
+			return "", err
+		}
+
+		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+		if err != nil {
+			return "", nil
+		}
+
+		for _, stat := range stats {
+
+			rc.AddPeer(stat.Index, fmt.Sprintf("http://%s:%d/eureka", stat.Host, stat.InstancePorts[0].External), serviceId)
+		}
+	} else {
+		rc.Standalone()
+	}
+
+	broker.Logger.Info("Updating Environment")
+	err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, serviceId, instanceId, rc, params)
+
+	if err != nil {
+		return "", err
+	}
+
 	route, _, err := cfClient.CreateRoute(ccv3.Route{
 		SpaceGUID:  spaceGUID,
 		DomainGUID: domains[0].GUID,
@@ -129,101 +190,85 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	if err != nil {
 		return "", err
 	}
+
 	_, err = cfClient.MapRoute(route.GUID, app.GUID)
+
 	if err != nil {
 		return "", err
 	}
 
-	broker.Logger.Info("handle node count")
-	// handle the node count
-	rc := &registryConfig{}
-	broker.Logger.Info("jsonparams == " + jsonparams)
-	rp, err := utilities.ExtractRegistryParams(jsonparams)
+	broker.Logger.Info("Starting Application")
+	app, _, err = cfClient.UpdateApplicationStart(app.GUID)
 	if err != nil {
-		return "", err
-	}
-
-	if count, found := rp["count"]; found {
-		if c, ok := count.(int); ok {
-			if c > 1 {
-				rc.Clustered()
-				broker.Logger.Info(fmt.Sprintf("scaling to %d", c))
-				err = broker.scaleRegistryServer(cfClient, &app, c, rc)
-				if err != nil {
-					return "", err
-				}
-			} else {
-				rc.Standalone()
-			}
-		} else {
-			rc.Standalone()
+		broker.Logger.Info("Application Start Failed, Trying restart")
+		app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+		if err != nil {
+			broker.Logger.Info("Application Start failed")
+			return "", err
 		}
 	}
 
-	broker.Logger.Info("Updating Environment")
-	err = broker.UpdateAppEnvironment(cfClient, &app, &info, serviceId, instanceId, rc.String(), params)
-
+	community, err := broker.GetCommunity()
 	if err != nil {
 		return "", err
 	}
 
-	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	if count > 1 {
+		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+		if err != nil {
+			return "", err
+		}
+
+		for _, stat := range stats {
+			rc.AddPeer(stat.Index, fmt.Sprintf("http://%s:%d/eureka", stat.Host, stat.InstancePorts[0].External), serviceId)
+		}
+	}
+
+	peers, err := json.Marshal(rc.Peers)
 	if err != nil {
 		return "", err
+	}
+	x := 0
+	for _, peer := range rc.Peers {
+		req, err := http.NewRequest(http.MethodPost, "https://"+route.URL+"/config/peers", bytes.NewBuffer(peers))
+		if err != nil {
+			fmt.Printf("client: could not create request: %s\n", err)
+
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
+
+		refreshreq, err := http.NewRequest(http.MethodPost, "https://"+route.URL+"/actuator/refresh", nil)
+		if err != nil {
+			fmt.Printf("client: could not create request: %s\n", err)
+
+		}
+		refreshreq.Header.Set("Content-Type", "application/json")
+		refreshreq.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
+
+		client := http.Client{
+			Timeout: 30 * time.Second,
+		}
+
+		res, err := client.Do(req)
+		if err != nil {
+			fmt.Printf("client: error making http request: %s\n", err)
+		}
+		broker.Logger.Info(res.Request.RequestURI)
+		broker.Logger.Info(string(peers))
+		broker.Logger.Info(res.Status)
+
+		refreshres, err := client.Do(refreshreq)
+		if err != nil {
+			fmt.Printf("client: error making http request: %s\n", err)
+		}
+		broker.Logger.Info(refreshres.Request.RequestURI)
+		broker.Logger.Info(string(peers))
+		broker.Logger.Info(refreshres.Status)
+		x++
 	}
 
 	broker.Logger.Info(route.URL)
 
 	return route.URL, nil
-}
-
-type registryConfig struct {
-	Mode  string
-	Peers []string
-}
-
-func (rc *registryConfig) AddPeer(peer string) {
-	rc.Peers = append(rc.Peers, peer)
-}
-
-func (rc *registryConfig) Standalone() {
-	rc.Mode = "standalone"
-}
-
-func (rc *registryConfig) Clustered() {
-	rc.Mode = "clustered"
-}
-
-func (rc *registryConfig) String() string {
-	return string(rc.Bytes())
-}
-
-func (rc *registryConfig) Bytes() []byte {
-	client := make(map[string]interface{})
-
-	if rc.Mode == "standalone" {
-		client["registerWithEureka"] = false
-		client["fetchRegistry"] = false
-	}
-
-	if len(rc.Peers) > 0 {
-		serviceUrl := make(map[string]interface{})
-		defaultZone := strings.Join(rc.Peers, ",")
-		serviceUrl["defaultZone"] = defaultZone
-		client["serviceUrl"] = serviceUrl
-	}
-
-	eureka := make(map[string]interface{})
-	eureka["client"] = client
-
-	data := make(map[string]interface{})
-	data["eureka"] = eureka
-
-	output, err := json.Marshal(data)
-	if err != nil {
-		return []byte("{}")
-	}
-
-	return output
-
 }

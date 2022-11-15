@@ -1,9 +1,16 @@
 package broker
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+	"time"
 
+	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/lager"
 	brokerapi "github.com/pivotal-cf/brokerapi/domain"
 	"github.com/starkandwayne/scs-broker/broker/utilities"
@@ -19,9 +26,24 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	broker.Logger.Info("update-service-instance", lager.Data{"plan-id": details.PlanID, "service-id": details.ServiceID})
 	envsetup := scsccparser.EnvironmentSetup{}
 	cfClient, err := broker.GetClient()
-
 	if err != nil {
 		return spec, errors.New("Couldn't start session: " + err.Error())
+	}
+
+	community, err := broker.GetCommunity()
+	if err != nil {
+		return spec, err
+	}
+
+	rc := utilities.NewRegistryConfig()
+	rp, err := utilities.ExtractRegistryParams(string(details.RawParameters))
+	if err != nil {
+		return spec, err
+	}
+
+	count, err := rp.Count()
+	if err != nil {
+		return spec, err
 	}
 
 	info, _, _, err := cfClient.GetInfo()
@@ -46,46 +68,133 @@ func (broker *SCSBroker) updateRegistryServerInstance(cxt context.Context, insta
 	}
 
 	broker.Logger.Info("Updating application")
-	_, _, err = cfClient.UpdateApplication(app)
+
+	_, _, err = cfClient.UpdateApplication(utilities.SafeApp(app))
 	if err != nil {
+		broker.Logger.Info("UpdateApplication(app) failed")
 		return spec, err
 	}
 
 	broker.Logger.Info("handling node count")
 	// handle the node count
-	rc := &registryConfig{}
-	rp, err := utilities.ExtractRegistryParams(string(details.RawParameters))
+	if count > 1 {
+		rc.Clustered()
+	} else {
+		rc.Standalone()
+	}
+
+	// since this is an update, we need to scale, but only if the desired proc
+	// count has changed
+	procs, err := getApplicationProcessesByType(cfClient, broker.Logger, app.GUID, "web")
 	if err != nil {
 		return spec, err
 	}
 
-	if count, found := rp["count"]; found {
-		if c, ok := count.(int); ok {
-			if c > 1 {
-				rc.Clustered()
-				err = broker.scaleRegistryServer(cfClient, &app, c, rc)
-				if err != nil {
-					return spec, err
-				}
-			} else {
-				rc.Standalone()
-			}
-		} else {
-			rc.Standalone()
+	procCount := 0
+	for _, proc := range procs {
+		if proc.Instances.IsSet {
+			procCount += proc.Instances.Value
+		}
+	}
+
+	broker.Logger.Info(fmt.Sprintf("I received %d procs from the API", procCount))
+
+	if count != procCount {
+		broker.Logger.Info(fmt.Sprintf("Scaling to %d procs", count))
+		err = broker.scaleRegistryServer(cfClient, &app, count)
+		if err != nil {
+			return spec, err
+		}
+	}
+
+	if count > 1 {
+		stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+		if err != nil {
+			return spec, err
+		}
+
+		for _, stat := range stats {
+			rc.AddPeer(stat.Index, fmt.Sprintf("http://%s:%d/eureka", stat.Host, stat.InstancePorts[0].External), details.ServiceID)
 		}
 	}
 
 	broker.Logger.Info("Updating Environment")
-	err = broker.UpdateAppEnvironment(cfClient, &app, &info, details.ServiceID, instanceID, rc.String(), mapparams)
+	err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, details.ServiceID, instanceID, rc, mapparams)
 
 	if err != nil {
 		return spec, err
 	}
 
-	_, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
 	if err != nil {
 		return spec, err
+	}
+
+	route, _, err := cfClient.GetApplicationRoutes(app.GUID)
+
+	peers, err := json.Marshal(rc.Peers)
+	if err != nil {
+		return spec, err
+	}
+	x := 0
+	for _, peer := range rc.Peers {
+		req, err := http.NewRequest(http.MethodPost, "https://"+route[0].URL+"/config/peers", bytes.NewBuffer(peers))
+		if err != nil {
+			fmt.Printf("client: could not create request: %s\n", err)
+
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
+
+		refreshreq, err := http.NewRequest(http.MethodPost, "https://"+route[0].URL+"/actuator/refresh", nil)
+		if err != nil {
+			fmt.Printf("client: could not create request: %s\n", err)
+
+		}
+		refreshreq.Header.Set("Content-Type", "application/json")
+		refreshreq.Header.Set("X-Cf-App-Instance", app.GUID+":"+strconv.Itoa(peer.Index))
+
+		client := http.Client{
+			Timeout: 30 * time.Second,
+		}
+
+		res, err := client.Do(req)
+		if err != nil {
+			fmt.Printf("client: error making http request: %s\n", err)
+		}
+		broker.Logger.Info(res.Request.RequestURI)
+		broker.Logger.Info(string(peers))
+		broker.Logger.Info(res.Status)
+
+		refreshres, err := client.Do(refreshreq)
+		if err != nil {
+			fmt.Printf("client: error making http request: %s\n", err)
+		}
+		broker.Logger.Info(refreshres.Request.RequestURI)
+		broker.Logger.Info(string(peers))
+		broker.Logger.Info(refreshres.Status)
+		x++
 	}
 
 	return spec, nil
+}
+
+func getApplicationProcessesByType(client *ccv3.Client, logger lager.Logger, appGUID string, procType string) ([]ccv3.Process, error) {
+	filtered := make([]ccv3.Process, 0)
+
+	candidates, _, err := client.GetApplicationProcesses(appGUID)
+	if err != nil {
+		return filtered, err
+	}
+
+	logger.Info(fmt.Sprintf("getApplicationProcessesByType got %d total procs", len(candidates)))
+
+	for _, prospect := range candidates {
+
+		if prospect.Type == procType {
+			filtered = append(filtered, prospect)
+		}
+	}
+
+	return filtered, nil
 }

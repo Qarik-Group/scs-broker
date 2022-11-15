@@ -1,9 +1,7 @@
 package utilities
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -71,31 +69,4 @@ func MakeClientIdForBinding(serviceId string, bindingId string) string {
 // and a service instance ID.
 func MakeAppName(serviceId string, instanceId string) string {
 	return serviceId + "-" + instanceId
-}
-
-func ExtractRegistryParams(details string) (map[string]interface{}, error) {
-	// decode the raw params
-	decoded := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(details), &decoded); err != nil {
-		return nil, err
-	}
-
-	// get the registry-specific params that affect broker operations
-	rp := RegistryParams{}
-
-	rp.Merge("count", decoded)
-	rp.Merge("application-security-groups", decoded)
-	for key, _ := range rp {
-		fmt.Println(key)
-	}
-
-	return rp, nil
-}
-
-type RegistryParams map[string]interface{}
-
-func (rp RegistryParams) Merge(key string, other map[string]interface{}) {
-	if value, found := other[key]; found {
-		rp[key] = value
-	}
 }
