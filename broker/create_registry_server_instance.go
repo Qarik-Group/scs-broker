@@ -136,6 +136,23 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", errors.New("no domains found for this instance")
 	}
 
+	route, _, err := cfClient.CreateRoute(ccv3.Route{
+		SpaceGUID:  spaceGUID,
+		DomainGUID: domains[0].GUID,
+		Host:       appName,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	_, err = cfClient.MapRoute(route.GUID, app.GUID)
+
+	if err != nil {
+		return "", err
+	}
+
+	time.Sleep(time.Second)
+
 	broker.Logger.Info("Starting Application")
 	app, _, err = cfClient.UpdateApplicationStart(app.GUID)
 	if err != nil {
@@ -177,21 +194,6 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 
 	broker.Logger.Info("Updating Environment")
 	err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, serviceId, instanceId, rc, params)
-
-	if err != nil {
-		return "", err
-	}
-
-	route, _, err := cfClient.CreateRoute(ccv3.Route{
-		SpaceGUID:  spaceGUID,
-		DomainGUID: domains[0].GUID,
-		Host:       appName,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	_, err = cfClient.MapRoute(route.GUID, app.GUID)
 
 	if err != nil {
 		return "", err
@@ -269,6 +271,20 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	}
 
 	broker.Logger.Info(route.URL)
+
+	sucessfulStart, err := broker.MonitorApplicationStartup(cfClient, community, broker.Logger, app.GUID)
+	if err != nil || sucessfulStart == false {
+		broker.Logger.Info("Crashed application retarting...")
+		app, _, err = cfClient.UpdateApplicationStart(app.GUID)
+		if err != nil {
+			broker.Logger.Info("Application Start Failed, Trying restart")
+			app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
+			if err != nil {
+				broker.Logger.Info("Application Start failed")
+				return "", err
+			}
+		}
+	}
 
 	return route.URL, nil
 }
