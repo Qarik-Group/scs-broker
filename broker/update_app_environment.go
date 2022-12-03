@@ -12,14 +12,19 @@ import (
 // Updates the app enviornment variables for creating or updating an instance.
 func (broker *SCSBroker) UpdateAppEnvironment(cfClient *ccv3.Client, app *ccv3.Application, info *ccv3.Info, kind string, instanceId string, jsonparams string, params map[string]string) error {
 
+	var hostKeySetSSH bool = false
 	var profiles []string
+	var envVarToSet ccv3.EnvironmentVariables
 	for key, value := range params {
-		_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-			key: *types.NewFilteredString(value),
-		})
+
+		envVarToSet[key] = *types.NewFilteredString(value)
 
 		if key == "SPRING_CLOUD_CONFIG_SERVER_GIT_URI" {
 			profiles = append(profiles, "git")
+		}
+
+		if key == "SPRING_CLOUD_CONFIG_SERVER_GIT_HOSTKEY" {
+			hostKeySetSSH = true
 		}
 
 		if key == "SPRING_CLOUD_CONFIG_SERVER_VAULT_HOST" {
@@ -34,9 +39,6 @@ func (broker *SCSBroker) UpdateAppEnvironment(cfClient *ccv3.Client, app *ccv3.A
 			profiles = append(profiles, "credhub")
 		}
 
-		if err != nil {
-			return err
-		}
 	}
 
 	var profileString strings.Builder
@@ -48,13 +50,21 @@ func (broker *SCSBroker) UpdateAppEnvironment(cfClient *ccv3.Client, app *ccv3.A
 		}
 	}
 
-	_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, ccv3.EnvironmentVariables{
-		"SPRING_APPLICATION_JSON": *types.NewFilteredString(jsonparams),
-		"JWK_SET_URI":             *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA())),
-		"SKIP_SSL_VALIDATION":     *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation)),
-		"REQUIRED_AUDIENCE":       *types.NewFilteredString(fmt.Sprintf("%s.%v", kind, instanceId)),
-		"SPRING_PROFILES_ACTIVE":  *types.NewFilteredString(profileString.String()),
-	})
+	envVarToSet["SPRING_CLOUD_CONFIG_SERVER_GIT_IGNORELOCALSSHSETTINGS"] = *types.NewFilteredString("true")
+
+	if !hostKeySetSSH {
+		envVarToSet["SPRING_CLOUD_CONFIG_SERVER_GIT_STRICTHOSTKEYCHECKING"] = *types.NewFilteredString("false")
+	} else {
+		envVarToSet["SPRING_CLOUD_CONFIG_SERVER_GIT_STRICTHOSTKEYCHECKING"] = *types.NewFilteredString("true")
+	}
+
+	envVarToSet["SPRING_APPLICATION_JSON"] = *types.NewFilteredString(jsonparams)
+	envVarToSet["JWK_SET_URI"] = *types.NewFilteredString(fmt.Sprintf("%v/token_keys", info.UAA()))
+	envVarToSet["SKIP_SSL_VALIDATION"] = *types.NewFilteredString(strconv.FormatBool(broker.Config.CfConfig.SkipSslValidation))
+	envVarToSet["REQUIRED_AUDIENCE"] = *types.NewFilteredString(fmt.Sprintf("%s.%v", kind, instanceId))
+	envVarToSet["SPRING_PROFILES_ACTIVE"] = *types.NewFilteredString(profileString.String())
+
+	_, _, err := cfClient.UpdateApplicationEnvironmentVariables(app.GUID, envVarToSet)
 	if err != nil {
 		return err
 	}
