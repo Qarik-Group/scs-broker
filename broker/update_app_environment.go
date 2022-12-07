@@ -14,7 +14,7 @@ func (broker *SCSBroker) UpdateAppEnvironment(cfClient *ccv3.Client, app *ccv3.A
 
 	var hostKeySetSSH bool = false
 	var profiles []string
-	var envVarToSet ccv3.EnvironmentVariables
+	envVarToSet := make(ccv3.EnvironmentVariables)
 	for key, value := range params {
 
 		envVarToSet[key] = *types.NewFilteredString(value)
