@@ -39,6 +39,7 @@ $cf create-service config-server default test-service -c "whatever json configur
 
 ## History ##
 
+* v1.1.0 - Added default settings for the hostKey to not be needed by defaut for CloudFoundry instances
 * v1.0.0 - Full release with support for SR Actuators
 * v0.0.5 - Services as configurable objects
 * v0.0.4 - Now with configurable package names
