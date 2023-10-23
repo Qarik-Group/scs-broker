@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	brokerapi "github.com/pivotal-cf/brokerapi/v7/domain"
 	scsccparser "github.com/starkandwayne/spring-cloud-services-cli-config-parser"
 )
 

@@ -16,19 +16,21 @@ require (
 	code.cloudfoundry.org/cli v6.51.0+incompatible
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	github.com/cloudfoundry-community/go-cf-clients-helper v1.0.1
+	github.com/cloudfoundry-community/go-cfclient v0.0.0-20220930021109-9c4e6c59ccf1
 	github.com/cloudfoundry-community/go-uaa v0.3.1
 	github.com/drewolson/testflight v1.0.0 // indirect
+	github.com/ess/hype v1.1.5
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
-	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
+	github.com/pivotal-cf/brokerapi/v7 v7.4.0
 	github.com/starkandwayne/spring-cloud-services-cli-config-parser v1.0.2
 	github.com/stretchr/testify v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )

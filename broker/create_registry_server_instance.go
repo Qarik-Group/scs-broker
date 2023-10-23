@@ -1,12 +1,10 @@
 package broker
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path"
-	"strings"
 
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3"
 	"code.cloudfoundry.org/cli/api/cloudcontroller/ccv3/constant"
@@ -18,6 +16,18 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	if err != nil {
 		return "", err
 	}
+
+	//rc := utilities.NewRegistryConfig()
+	broker.Logger.Info("jsonparams == " + jsonparams)
+	//rp, err := utilities.ExtractRegistryParams(jsonparams)
+	//if err != nil {
+	//return "", err
+	//}
+
+	//count, err := rp.Count()
+	//if err != nil {
+	//return "", err
+	//}
 
 	cfClient, err := broker.GetClient()
 	if err != nil {
@@ -134,38 +144,39 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 		return "", err
 	}
 
-	broker.Logger.Info("handle node count")
-	// handle the node count
-	rc := &registryConfig{}
-	broker.Logger.Info("jsonparams == " + jsonparams)
-	rp, err := utilities.ExtractRegistryParams(jsonparams)
-	if err != nil {
-		return "", err
-	}
+	//broker.Logger.Info("handle node count")
+	//// handle the node count
+	//if count > 1 {
+	//rc.Clustered()
+	//broker.Logger.Info(fmt.Sprintf("scaling to %d", count))
+	//err = broker.scaleRegistryServer(cfClient, &app, count)
+	//if err != nil {
+	//return "", err
+	//}
 
-	if count, found := rp["count"]; found {
-		if c, ok := count.(int); ok {
-			if c > 1 {
-				rc.Clustered()
-				broker.Logger.Info(fmt.Sprintf("scaling to %d", c))
-				err = broker.scaleRegistryServer(cfClient, &app, c, rc)
-				if err != nil {
-					return "", err
-				}
-			} else {
-				rc.Standalone()
-			}
-		} else {
-			rc.Standalone()
-		}
-	}
+	//community, err := broker.GetCommunity()
+	//if err != nil {
+	//return "", err
+	//}
 
-	broker.Logger.Info("Updating Environment")
-	err = broker.UpdateAppEnvironment(cfClient, &app, &info, serviceId, instanceId, rc.String(), params)
+	//stats, err := getProcessStatsByAppAndType(cfClient, community, broker.Logger, app.GUID, "web")
+	//if err != nil {
+	//return "", nil
+	//}
 
-	if err != nil {
-		return "", err
-	}
+	//for _, stat := range stats {
+	//rc.AddPeer(stat.Index, "http", stat.Host, stat.InstancePorts[0].External)
+	//}
+	//} else {
+	//rc.Standalone()
+	//}
+
+	//broker.Logger.Info("Updating Environment")
+	//err = broker.UpdateRegistryEnvironment(cfClient, &app, &info, serviceId, instanceId, rc, params)
+
+	//if err != nil {
+	//return "", err
+	//}
 
 	app, _, err = cfClient.UpdateApplicationRestart(app.GUID)
 	if err != nil {
@@ -175,55 +186,4 @@ func (broker *SCSBroker) createRegistryServerInstance(serviceId string, instance
 	broker.Logger.Info(route.URL)
 
 	return route.URL, nil
-}
-
-type registryConfig struct {
-	Mode  string
-	Peers []string
-}
-
-func (rc *registryConfig) AddPeer(peer string) {
-	rc.Peers = append(rc.Peers, peer)
-}
-
-func (rc *registryConfig) Standalone() {
-	rc.Mode = "standalone"
-}
-
-func (rc *registryConfig) Clustered() {
-	rc.Mode = "clustered"
-}
-
-func (rc *registryConfig) String() string {
-	return string(rc.Bytes())
-}
-
-func (rc *registryConfig) Bytes() []byte {
-	client := make(map[string]interface{})
-
-	if rc.Mode == "standalone" {
-		client["registerWithEureka"] = false
-		client["fetchRegistry"] = false
-	}
-
-	if len(rc.Peers) > 0 {
-		serviceUrl := make(map[string]interface{})
-		defaultZone := strings.Join(rc.Peers, ",")
-		serviceUrl["defaultZone"] = defaultZone
-		client["serviceUrl"] = serviceUrl
-	}
-
-	eureka := make(map[string]interface{})
-	eureka["client"] = client
-
-	data := make(map[string]interface{})
-	data["eureka"] = eureka
-
-	output, err := json.Marshal(data)
-	if err != nil {
-		return []byte("{}")
-	}
-
-	return output
-
 }

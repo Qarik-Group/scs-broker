@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/lager"
-	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	brokerapi "github.com/pivotal-cf/brokerapi/v7/domain"
 	"github.com/starkandwayne/scs-broker/broker/utilities"
 	scsccparser "github.com/starkandwayne/spring-cloud-services-cli-config-parser"
 )
@@ -45,7 +45,9 @@ func (broker *SCSBroker) updateConfigServerInstance(cxt context.Context, instanc
 		return spec, err
 	}
 
-	_, _, err = cfClient.UpdateApplication(app)
+	//TODO: Test this in particular, as it does not work as expected in
+	//the equivalent workflow for service-registry.
+	_, _, err = cfClient.UpdateApplication(utilities.SafeApp(app))
 	if err != nil {
 		return spec, err
 	}
